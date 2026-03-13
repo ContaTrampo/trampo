@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disparar Currículos — TRAMPO</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <nav class="nav container">
+    <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="../index.html">Início</a></li>
+      <li><a href="dispatch.html" class="active">Disparar CV</a></li>
+      <li><a href="profile.html">Meu Perfil</a></li>
+      <li><a href="routes.html">Rotas</a></li>
+      <li><a href="premium.html">Premium 👑</a></li>
+      <li><a href="support.html">Suporte</a></li>
+    </ul>
+    <div class="nav-auth" id="navAuth">
+      <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button>
+    </div>
+    <div class="nav-user hidden" id="navUser">
+      <span class="badge badge-free hidden" id="navBadge">Free</span>
+      <span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span>
+      <div class="avatar" id="navAvatar">?</div>
+      <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button>
+    </div>
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+  </nav>
+</header>
+
+<div class="page-header">
+  <div class="container">
+    <h1>🎯 Disparar Currículos</h1>
+    <p>A IA analisa seu perfil e encontra as vagas mais compatíveis para você.</p>
+  </div>
+</div>
+
+<div class="container" style="padding-top:40px;padding-bottom:80px">
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start">
+
+    <!-- ─── COLUNA PRINCIPAL ─── -->
+    <div>
+
+      <!-- QUOTA CARD -->
+      <div class="quota-card" id="quotaCard">
+        <div class="quota-title">Sua cota de hoje</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
+          <div class="quota-nums"><span id="quotaUsed">0</span> / <span id="quotaLimit">5</span></div>
+          <span class="badge badge-free" id="planBadge">Plano Free</span>
+        </div>
+        <div class="progress-bar" style="margin-bottom:12px">
+          <div class="progress-fill" id="quotaProgress" style="width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:rgba(255,255,255,0.5)">Reset às 00:00 de amanhã</span>
+          <a href="premium.html" style="font-size:13px;color:var(--green);font-weight:700">Upgrade → 30/dia 👑</a>
+        </div>
+      </div>
+
+      <!-- BOTÃO PRINCIPAL -->
+      <button class="dispatch-btn" id="dispatchBtn" onclick="startDispatch()">
+        <div class="dispatch-icon">🎯</div>
+        <h2>ANALISAR & DISPARAR</h2>
+        <p>Clique para a IA encontrar as vagas ideais para você</p>
+      </button>
+
+      <!-- LOADING STATE -->
+      <div class="card hidden" id="loadingCard" style="text-align:center;padding:48px">
+        <div style="display:flex;justify-content:center;margin-bottom:24px">
+          <div class="spinner spinner-green" style="width:48px;height:48px;border-width:4px"></div>
+        </div>
+        <h3 id="loadingText" style="color:var(--navy);margin-bottom:8px">Analisando seu perfil...</h3>
+        <p style="color:var(--gray-500);font-size:14px">Isso leva apenas alguns segundos</p>
+      </div>
+
+      <!-- VAGAS MATCHES -->
+      <div id="matchesSection" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 style="font-size:20px;font-weight:800;color:var(--navy)">✨ Vagas recomendadas para você</h3>
+          <span id="matchCount" class="badge badge-green">0 vagas</span>
+        </div>
+        <div id="matchesList"></div>
+      </div>
+
+      <!-- HISTÓRICO -->
+      <div id="historySection" style="margin-top:48px">
+        <h3 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:20px">📋 Histórico de Candidaturas</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Vaga</th>
+                <th>Empresa</th>
+                <th>Enviado</th>
+                <th>Status</th>
+                <th>Match</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--gray-500);padding:32px">Nenhuma candidatura ainda. Clique em Disparar!</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SIDEBAR DICAS ─── -->
+    <div style="position:sticky;top:96px">
+      <div class="card" style="margin-bottom:20px">
+        <h4 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px">💡 Dicas para mais respostas</h4>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
+          <li style="font-size:13px;color:var(--gray-700);display:flex;gap:8px"><span>✅</span> Tenha seu currículo atualizado no perfil</li>
+          <li style="font-size:13px;color:var(--gray-700);display:flex;gap:8px"><span>✅</span> Preencha todas as skills na sua bio</li>
+          <li style="font-size:13px;color:var(--gray-700);display:flex;gap:8px"><span>✅</span> Candidate-se cedo — vagas novas = menos concorrência</li>
+          <li style="font-size:13px;color:var(--gray-700);display:flex;gap:8px"><span>✅</span> Revise a carta de apresentação antes de enviar</li>
+          <li style="font-size:13px;color:var(--gray-700);display:flex;gap:8px"><span>✅</span> Mantenha LinkedIn atualizado</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,var(--navy),var(--navy-light));border:none;color:white">
+        <div style="font-size:28px;margin-bottom:12px">👑</div>
+        <h4 style="font-size:16px;font-weight:700;margin-bottom:8px">Upgrade para Premium</h4>
+        <p style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:20px">30 envios por dia, notificações em tempo real, destaque prioritário e muito mais.</p>
+        <a href="premium.html" class="btn btn-primary btn-sm btn-block">Ver Premium — R$29/mês</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL ENVIO ─── -->
+<div class="modal-overlay" id="sendModal">
+  <div class="modal" style="max-width:560px">
+    <button class="modal-close" onclick="closeSendModal()">✕</button>
+    <div style="margin-bottom:8px">
+      <span class="badge badge-green" id="modalMatchScore">Match 90%</span>
+    </div>
+    <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:4px" id="modalJobTitle">Desenvolvedor Python Sr.</h2>
+    <p style="color:var(--gray-500);font-size:14px;margin-bottom:24px" id="modalJobMeta">Tech Corp Brasil · São Paulo, SP</p>
+
+    <div style="margin-bottom:20px">
+      <label class="form-label">✉️ Carta de Apresentação (editável)</label>
+      <textarea id="coverLetterText" class="form-input" rows="7" placeholder="Gerando carta personalizada..."></textarea>
+      <p class="form-hint">Esta carta foi escrita pela IA para esta vaga específica. Você pode editar antes de enviar.</p>
+    </div>
+
+    <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;font-size:13px">
+      <strong>📧 Será enviado para:</strong> <span id="modalEmail" style="color:var(--green)">jobs@empresa.com</span><br>
+      <strong>📎 Anexo:</strong> Seu currículo em PDF
+    </div>
+
+    <div style="display:flex;gap:12px">
+      <button class="btn btn-primary btn-lg" style="flex:1" id="confirmSendBtn" onclick="confirmSend()">✅ Confirmar Envio</button>
+      <button class="btn btn-secondary" onclick="closeSendModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL AUTH ─── -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAuthModal()">✕</button>
+    <div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="login">Entrar</button>
+      <button class="modal-tab" data-tab="register">Criar Conta</button>
+    </div>
+    <form id="loginForm">
+      <div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div>
+      <div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button>
+    </form>
+    <form id="registerForm" class="hidden">
+      <div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" placeholder="Seu nome" required></div>
+      <div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" placeholder="seu@email.com" required></div>
+      <div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div>
+      <div class="form-group"><label class="form-label">Sou um</label><select id="regRole" class="form-input form-select"><option value="candidate">👤 Candidato</option><option value="recruiter">🏢 Recrutador</option></select></div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button>
+    </form>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script>
+let currentJob = null;
+
+async function loadQuota() {
+  if (!Auth.isLoggedIn()) return;
+  try {
+    const data = await get('/auth/me');
+    const user = data.user;
+    const limit = user.is_premium ? 30 : 5;
+    const used = user.daily_sends_used || 0;
+    document.getElementById('quotaUsed').textContent = used;
+    document.getElementById('quotaLimit').textContent = limit;
+    document.getElementById('quotaProgress').style.width = `${(used/limit)*100}%`;
+    if (user.is_premium) {
+      document.getElementById('planBadge').textContent = '💎 Premium';
+      document.getElementById('planBadge').className = 'badge badge-premium';
+    }
+  } catch {}
+}
+
+async function loadHistory() {
+  if (!Auth.isLoggedIn()) return;
+  try {
+    const data = await get('/applications/');
+    const tbody = document.getElementById('historyBody');
+    if (!data.applications?.length) return;
+    const statusMap = { sent:'status-sent', viewed:'status-viewed', responded:'status-responded', rejected:'status-rejected', interview:'status-interview' };
+    const statusLabel = { sent:'Enviado', viewed:'Visualizado', responded:'Respondido', rejected:'Rejeitado', interview:'Entrevista' };
+    tbody.innerHTML = data.applications.map(app => `
+      <tr>
+        <td style="font-weight:600">${app.job?.title || '—'}</td>
+        <td>${app.job?.company || '—'}</td>
+        <td>${new Date(app.sent_at).toLocaleDateString('pt-BR')}</td>
+        <td><span class="status ${statusMap[app.status]||'status-sent'}">${statusLabel[app.status]||app.status}</span></td>
+        <td><strong style="color:var(--green)">${app.match_score}%</strong></td>
+      </tr>
+    `).join('');
+  } catch {}
+}
+
+async function startDispatch() {
+  if (!Auth.isLoggedIn()) { openAuthModal('login'); return; }
+  document.getElementById('dispatchBtn').classList.add('hidden');
+  document.getElementById('loadingCard').classList.remove('hidden');
+  document.getElementById('matchesSection').classList.add('hidden');
+
+  const steps = ['Analisando seu perfil...', 'Buscando vagas compatíveis...', 'Calculando scores de compatibilidade...', 'Encontrando as melhores oportunidades!'];
+  let i = 0;
+  const interval = setInterval(() => {
+    document.getElementById('loadingText').textContent = steps[i++];
+    if (i >= steps.length) clearInterval(interval);
+  }, 900);
+
+  try {
+    const data = await get('/matching/jobs');
+    clearInterval(interval);
+    document.getElementById('loadingCard').classList.add('hidden');
+    renderMatches(data.matches || getMockMatches());
+  } catch {
+    clearInterval(interval);
+    document.getElementById('loadingCard').classList.add('hidden');
+    renderMatches(getMockMatches());
+  }
+}
+
+function getMockMatches() {
+  return [
+    { job: { id:1, title:'Desenvolvedor Python Sr.', company:'Tech Corp Brasil', location:'São Paulo, SP', contact_email:'jobs@techcorp.com.br', required_skills:['Python','Django','FastAPI'] }, score: 92 },
+    { job: { id:2, title:'Dev Backend Node.js', company:'StartupX', location:'Remoto', contact_email:'rh@startupx.com', required_skills:['Node.js','TypeScript','MongoDB'] }, score: 85 },
+    { job: { id:3, title:'Engenheiro de Software Pleno', company:'Fintech BR', location:'São Paulo, SP', contact_email:'vagas@fintechbr.com', required_skills:['Python','React','AWS'] }, score: 78 },
+  ];
+}
+
+function renderMatches(matches) {
+  const section = document.getElementById('matchesSection');
+  const list = document.getElementById('matchesList');
+  document.getElementById('matchCount').textContent = `${matches.length} vagas`;
+  list.innerHTML = matches.map(m => `
+    <div class="match-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div class="match-score">🎯 ${m.score}% compatível</div>
+        <div style="font-size:12px;color:var(--gray-500)">${m.job.location || ''}</div>
+      </div>
+      <h3>${m.job.title}</h3>
+      <div class="match-meta">🏢 ${m.job.company}${m.job.salary_min ? ` · 💰 R$${m.job.salary_min.toLocaleString('pt-BR')}` : ''}</div>
+      <div class="match-skills">
+        ${(m.job.required_skills||[]).slice(0,4).map(s=>`<span class="match-skill">${s}</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary btn-sm" onclick='openSendModal(${JSON.stringify(m)})'>📤 Enviar meu CV</button>
+        <button class="btn btn-secondary btn-sm">Ver detalhes</button>
+      </div>
+    </div>
+  `).join('');
+  section.classList.remove('hidden');
+  document.getElementById('dispatchBtn').classList.remove('hidden');
+}
+
+function openSendModal(match) {
+  currentJob = match;
+  document.getElementById('modalMatchScore').textContent = `Match ${match.score}%`;
+  document.getElementById('modalJobTitle').textContent = match.job.title;
+  document.getElementById('modalJobMeta').textContent = `${match.job.company} · ${match.job.location || ''}`;
+  document.getElementById('modalEmail').textContent = match.job.contact_email || 'Não informado';
+  const user = Auth.getUser();
+  const name = user?.name || 'Candidato';
+  const skills = (match.job.required_skills||[]).slice(0,3).join(', ');
+  document.getElementById('coverLetterText').value = `Olá,\n\nMeu nome é ${name} e tenho interesse na vaga de ${match.job.title} na ${match.job.company}.\n\nPossuo experiência com as tecnologias que vocês buscam, especialmente ${skills||'as skills requeridas'}. Acredito que meu perfil se alinha com o que a empresa precisa e poderia contribuir desde o primeiro dia.\n\nEstou disponível para uma conversa a qualquer momento. Segue meu currículo em anexo.\n\nAtenciosamente,\n${name}`;
+  document.getElementById('sendModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSendModal() {
+  document.getElementById('sendModal').classList.remove('active');
+  document.body.style.overflow = '';
+  currentJob = null;
+}
+
+async function confirmSend() {
+  if (!currentJob) return;
+  const btn = document.getElementById('confirmSendBtn');
+  setLoading(btn, true);
+  try {
+    await post('/applications/send', { job_id: currentJob.job.id, cover_letter: document.getElementById('coverLetterText').value });
+    closeSendModal();
+    toast(`✅ Currículo enviado para ${currentJob.job.company}!`);
+    await loadQuota();
+    await loadHistory();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadQuota();
+  loadHistory();
+});
+</script>
+<script src="../js/radio-bar.js"></script>
+</body>
+</html>

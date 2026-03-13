@@ -1,0 +1,85 @@
+"""TRAMPO v8 — Admin"""
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from database import db
+from models import User, Job, Application
+
+admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
+
+
+def _require_admin():
+    uid  = int(get_jwt_identity())
+    user = db.session.get(User, uid)
+    if not user or user.role != "admin":
+        return None, (jsonify({"error": "Acesso negado"}), 403)
+    return user, None
+
+
+@admin_bp.route("/stats", methods=["GET"])
+@jwt_required()
+def stats():
+    user, err = _require_admin()
+    if err:
+        return err
+    return jsonify({
+        "users":        User.query.count(),
+        "candidates":   User.query.filter_by(role="candidate").count(),
+        "recruiters":   User.query.filter_by(role="recruiter").count(),
+        "premium":      User.query.filter_by(is_premium=True).count(),
+        "jobs":         Job.query.count(),
+        "active_jobs":  Job.query.filter_by(status="active").count(),
+        "applications": Application.query.count(),
+    }), 200
+
+
+@admin_bp.route("/scrape-jobs", methods=["POST"])
+@jwt_required()
+def scrape_jobs():
+    """Dispara scraping de vagas manualmente (só admin)."""
+    user, err = _require_admin()
+    if err:
+        return err
+
+    try:
+        from services.job_scraper import run_full_scrape
+        result = run_full_scrape()
+        return jsonify({
+            "message": f"Scraping concluído! {result['total_saved']} novas vagas salvas. ✅",
+            "result":  result,
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Erro no scraping: {str(e)}"}), 500
+
+
+@admin_bp.route("/users", methods=["GET"])
+@jwt_required()
+def list_users():
+    user, err = _require_admin()
+    if err:
+        return err
+    page     = max(1, int(request.args.get("page", 1)))
+    per_page = 20
+    total    = User.query.count()
+    users    = User.query.order_by(User.created_at.desc()) \
+                   .offset((page-1)*per_page).limit(per_page).all()
+    return jsonify({
+        "users": [u.to_dict() for u in users],
+        "total": total,
+        "page":  page,
+    }), 200
+
+
+@admin_bp.route("/promote/<int:user_id>", methods=["POST"])
+@jwt_required()
+def promote_user(user_id):
+    admin, err = _require_admin()
+    if err:
+        return err
+    data = request.get_json() or {}
+    role = data.get("role", "admin")
+    target = db.session.get(User, user_id)
+    if not target:
+        return jsonify({"error": "Usuário não encontrado"}), 404
+    target.role = role
+    db.session.commit()
+    return jsonify({"message": f"Usuário {target.name} promovido para {role}. ✅"}), 200

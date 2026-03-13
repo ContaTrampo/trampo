@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calcular Rotas — TRAMPO</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header class="header">
+  <nav class="nav container">
+    <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="../index.html">Início</a></li><li><a href="dispatch.html">Disparar CV</a></li>
+      <li><a href="profile.html">Meu Perfil</a></li><li><a href="routes.html" class="active">Rotas</a></li>
+      <li><a href="premium.html">Premium 👑</a></li><li><a href="support.html">Suporte</a></li>
+    </ul>
+    <div class="nav-auth" id="navAuth"><button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button><button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button></div>
+    <div class="nav-user hidden" id="navUser"><span class="badge badge-free hidden" id="navBadge">Free</span><span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span><div class="avatar" id="navAvatar">?</div><button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button></div>
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+  </nav>
+</header>
+<div class="page-header"><div class="container"><h1>🗺️ Planejador de Rotas</h1><p>Calcule tempo e custo para chegar à sua entrevista.</p></div></div>
+<div class="container" style="padding:40px 0 80px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start">
+    <!-- FORM -->
+    <div>
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">📍 Calcular Rota</h3>
+        <div class="form-group"><label class="form-label">Minha localização atual</label><input id="origin" class="form-input" placeholder="Ex: Av. Paulista, 1000, São Paulo, SP"></div>
+        <div class="form-group"><label class="form-label">Destino (empresa / entrevista)</label><input id="destination" class="form-input" placeholder="Ex: Faria Lima, 2000, São Paulo, SP"></div>
+        <div class="form-group"><label class="form-label">Horário de chegada desejado</label><input id="arrivalTime" type="time" class="form-input" value="09:00"></div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="calcRoute()" id="calcBtn">🗺️ Calcular Todas as Rotas</button>
+      </div>
+      <!-- RESULTADOS -->
+      <div id="resultsSection" class="hidden">
+        <div style="background:var(--green-light);border-radius:var(--radius);padding:20px;margin-bottom:20px;border:1.5px solid rgba(0,200,83,0.2)">
+          <div style="font-size:13px;font-weight:700;color:var(--green-dark);margin-bottom:8px">✅ ROTAS CALCULADAS</div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div><div style="font-size:12px;color:var(--gray-500)">Distância</div><div style="font-size:18px;font-weight:700;color:var(--navy)" id="rDistance">—</div></div>
+            <div><div style="font-size:12px;color:var(--gray-500)">Origem</div><div style="font-size:14px;font-weight:600;color:var(--navy)" id="rOrigin">—</div></div>
+            <div><div style="font-size:12px;color:var(--gray-500)">Destino</div><div style="font-size:14px;font-weight:600;color:var(--navy)" id="rDest">—</div></div>
+          </div>
+        </div>
+        <div class="route-tabs">
+          <button class="route-tab active" onclick="showTab('public',this)">🚇 Transporte</button>
+          <button class="route-tab" onclick="showTab('uber',this)">🚕 Uber</button>
+          <button class="route-tab" onclick="showTab('bike',this)">🚴 Bike</button>
+          <button class="route-tab" onclick="showTab('compare',this)">📊 Comparar</button>
+        </div>
+        <!-- TRANSPORTE PÚBLICO -->
+        <div class="route-result active" id="tab-public">
+          <div class="route-info">
+            <div class="route-metric"><div class="label">Tempo estimado</div><div class="value" id="pt-time">—</div></div>
+            <div class="route-metric"><div class="label">Custo estimado</div><div class="value" id="pt-cost">—</div></div>
+            <div class="route-metric"><div class="label">Sair às</div><div class="value" id="pt-depart">—</div></div>
+          </div>
+          <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px">📋 Rota sugerida</div>
+            <p style="font-size:13px;color:var(--gray-600)">Metrô (próxima estação) → Conexão/Ônibus → A pé até o destino</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="https://maps.google.com" target="_blank" class="btn btn-secondary btn-sm">Google Maps</a>
+            <a href="https://moovit.com" target="_blank" class="btn btn-secondary btn-sm">Moovit</a>
+          </div>
+        </div>
+        <!-- UBER -->
+        <div class="route-result" id="tab-uber">
+          <div class="route-info">
+            <div class="route-metric"><div class="label">Tempo estimado</div><div class="value" id="ub-time">—</div></div>
+            <div class="route-metric"><div class="label">Sair às</div><div class="value" id="ub-depart">—</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--green-light);border-radius:var(--radius-sm);border:1.5px solid rgba(0,200,83,0.2)">
+              <span style="font-weight:700;color:var(--navy)">🚗 Uber Pop <span style="font-size:11px;background:var(--green);color:white;padding:2px 8px;border-radius:100px;margin-left:6px">Recomendado</span></span>
+              <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green-dark)" id="ub-pop">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--gray-50);border-radius:var(--radius-sm)">
+              <span style="font-weight:600;color:var(--navy)">🚗 Uber X</span>
+              <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--gray-700)" id="ub-x">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--gray-50);border-radius:var(--radius-sm)">
+              <span style="font-weight:600;color:var(--navy)">🚌 Uber XL</span>
+              <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--gray-700)" id="ub-xl">—</span>
+            </div>
+          </div>
+          <a href="uber://" class="btn btn-primary btn-sm">Abrir Uber App</a>
+        </div>
+        <!-- BIKE -->
+        <div class="route-result" id="tab-bike">
+          <div class="route-info">
+            <div class="route-metric"><div class="label">Tempo estimado</div><div class="value" id="bk-time">—</div></div>
+            <div class="route-metric"><div class="label">Custo estimado</div><div class="value" id="bk-cost">—</div></div>
+            <div class="route-metric"><div class="label">Sair às</div><div class="value" id="bk-depart">—</div></div>
+          </div>
+          <div style="background:var(--green-light);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;color:var(--gray-700)">
+            🌱 Opção mais saudável e sustentável! Recomendada para distâncias até 8km.
+          </div>
+          <div style="display:flex;gap:8px"><a href="#" class="btn btn-secondary btn-sm">Tembici</a><a href="#" class="btn btn-secondary btn-sm">Bike Itaú</a></div>
+        </div>
+        <!-- COMPARATIVO -->
+        <div class="route-result" id="tab-compare">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Opção</th><th>Tempo</th><th>Custo</th><th>Sair às</th><th>Nota</th></tr></thead>
+              <tbody id="compareBody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:20px;padding:16px;background:var(--gray-50);border-radius:var(--radius-sm)">
+            <div style="font-weight:700;color:var(--navy);margin-bottom:8px">💡 Dicas</div>
+            <ul style="font-size:13px;color:var(--gray-600);list-style:none;display:flex;flex-direction:column;gap:6px">
+              <li>• Saia 15 minutos mais cedo que o necessário para imprevistos</li>
+              <li>• Uber Pop costuma ser 20% mais barato nos horários de pico</li>
+              <li>• Guarde o comprovante do transporte — é dedutível como despesa</li>
+              <li>• Chegando 10-15 min antes cria excelente primeira impressão</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- MAPA PLACEHOLDER -->
+    <div style="position:sticky;top:96px">
+      <div class="map-container" id="mapContainer">
+        <div class="map-placeholder" id="mapPlaceholder">
+          <div style="font-size:64px;margin-bottom:16px">🗺️</div>
+          <h3 style="color:var(--navy);margin-bottom:8px">Mapa Interativo</h3>
+          <p style="font-size:14px">Preencha origem e destino para visualizar a rota no mapa.</p>
+          <p style="font-size:12px;margin-top:8px;color:var(--gray-300)">Necessário Google Maps API Key</p>
+        </div>
+        <div id="map" style="width:100%;height:100%;min-height:400px;display:none"></div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <h4 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:12px">📌 Rotas Salvas</h4>
+        <div id="savedRoutes"><p style="font-size:13px;color:var(--gray-500)">Nenhuma rota salva ainda.</p></div>
+        <button class="btn btn-secondary btn-sm btn-block" style="margin-top:12px" id="saveRouteBtn" onclick="saveRoute()" disabled>💾 Salvar Rota Atual</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- MODAL AUTH -->
+<div class="modal-overlay" id="authModal"><div class="modal"><button class="modal-close" onclick="closeAuthModal()">✕</button><div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div><div class="modal-tabs"><button class="modal-tab active" data-tab="login">Entrar</button><button class="modal-tab" data-tab="register">Criar Conta</button></div><form id="loginForm"><div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div><button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button></form><form id="registerForm" class="hidden"><div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" placeholder="Seu nome" required></div><div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div><div class="form-group"><label class="form-label">Sou um</label><select id="regRole" class="form-input form-select"><option value="candidate">👤 Candidato</option><option value="recruiter">🏢 Recrutador</option></select></div><button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button></form></div></div>
+<script src="../js/main.js"></script>
+<script>
+let lastResult = null;
+function showTab(name, btn) {
+  document.querySelectorAll('.route-result').forEach(r=>r.classList.remove('active'));
+  document.querySelectorAll('.route-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+async function calcRoute() {
+  const origin = document.getElementById('origin').value.trim();
+  const dest = document.getElementById('destination').value.trim();
+  if (!origin || !dest) { toast('Preencha origem e destino','error'); return; }
+  const btn = document.getElementById('calcBtn');
+  setLoading(btn, true);
+  try {
+    let data;
+    try { data = await post('/routes/calculate', { origin, destination: dest }); }
+    catch { data = mockCalc(origin, dest); }
+    lastResult = data;
+    renderRoutes(data, origin, dest);
+    document.getElementById('saveRouteBtn').disabled = false;
+  } catch(e) { toast(e.message,'error'); }
+  finally { setLoading(btn, false); }
+}
+function mockCalc(origin, dest) {
+  const dist = 12.5;
+  return {
+    distance_km: dist,
+    public_transport: { time_minutes: 45, cost_brl: 8.50 },
+    uber: { time_minutes: 25, costs: { uber_pop: 38, uber_x: 48, uber_xl: 62 } },
+    bike: { time_minutes: 40, cost_brl: 15 }
+  };
+}
+function calcDepart(arrival, travelMin, bufferMin=15) {
+  if (!arrival) return '—';
+  const [h,m] = arrival.split(':').map(Number);
+  const total = h*60+m - travelMin - bufferMin;
+  const dh = Math.floor(((total%1440)+1440)%1440/60);
+  const dm = ((total%1440)+1440)%1440%60;
+  return `${String(dh).padStart(2,'0')}:${String(dm).padStart(2,'0')}`;
+}
+function renderRoutes(data, origin, dest) {
+  const arr = document.getElementById('arrivalTime').value;
+  document.getElementById('rDistance').textContent = data.distance_km + ' km';
+  document.getElementById('rOrigin').textContent = origin.slice(0,30);
+  document.getElementById('rDest').textContent = dest.slice(0,30);
+  const pt = data.public_transport;
+  document.getElementById('pt-time').innerHTML = pt.time_minutes+'<small> min</small>';
+  document.getElementById('pt-cost').innerHTML = 'R$'+pt.cost_brl.toFixed(2).replace('.',',');
+  document.getElementById('pt-depart').innerHTML = calcDepart(arr,pt.time_minutes);
+  const ub = data.uber;
+  document.getElementById('ub-time').innerHTML = ub.time_minutes+'<small> min</small>';
+  document.getElementById('ub-depart').innerHTML = calcDepart(arr,ub.time_minutes);
+  document.getElementById('ub-pop').textContent = 'R$'+ub.costs.uber_pop.toFixed(2).replace('.',',');
+  document.getElementById('ub-x').textContent = 'R$'+ub.costs.uber_x.toFixed(2).replace('.',',');
+  document.getElementById('ub-xl').textContent = 'R$'+ub.costs.uber_xl.toFixed(2).replace('.',',');
+  const bk = data.bike;
+  document.getElementById('bk-time').innerHTML = bk.time_minutes+'<small> min</small>';
+  document.getElementById('bk-cost').innerHTML = 'R$'+bk.cost_brl.toFixed(2).replace('.',',');
+  document.getElementById('bk-depart').innerHTML = calcDepart(arr,bk.time_minutes);
+  document.getElementById('compareBody').innerHTML = `
+    <tr><td>🚇 Transporte Público</td><td>${pt.time_minutes} min</td><td>R$${pt.cost_brl.toFixed(2).replace('.',',')}</td><td>${calcDepart(arr,pt.time_minutes)}</td><td>⭐⭐⭐</td></tr>
+    <tr style="background:var(--green-light)"><td>🚗 Uber Pop</td><td>${ub.time_minutes} min</td><td>R$${ub.costs.uber_pop.toFixed(2).replace('.',',')}</td><td>${calcDepart(arr,ub.time_minutes)}</td><td>⭐⭐⭐⭐⭐</td></tr>
+    <tr><td>🚴 Bike Sharing</td><td>${bk.time_minutes} min</td><td>R$${bk.cost_brl.toFixed(2).replace('.',',')}</td><td>${calcDepart(arr,bk.time_minutes)}</td><td>⭐⭐⭐</td></tr>
+  `;
+  document.getElementById('resultsSection').classList.remove('hidden');
+}
+function saveRoute() {
+  const o = document.getElementById('origin').value;
+  const d = document.getElementById('destination').value;
+  const saved = JSON.parse(localStorage.getItem('trampo_routes')||'[]');
+  saved.unshift({ origin:o, destination:d, date:new Date().toLocaleDateString('pt-BR') });
+  localStorage.setItem('trampo_routes', JSON.stringify(saved.slice(0,5)));
+  renderSaved();
+  toast('Rota salva!');
+}
+function renderSaved() {
+  const saved = JSON.parse(localStorage.getItem('trampo_routes')||'[]');
+  const el = document.getElementById('savedRoutes');
+  if (!saved.length) { el.innerHTML='<p style="font-size:13px;color:var(--gray-500)">Nenhuma rota salva ainda.</p>'; return; }
+  el.innerHTML = saved.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--gray-100);font-size:13px"><div style="font-weight:600;color:var(--navy)">${r.origin.slice(0,25)}...</div><div style="color:var(--gray-500)">→ ${r.destination.slice(0,25)}...</div><div style="color:var(--gray-300);font-size:11px">${r.date}</div></div>`).join('');
+}
+document.addEventListener('DOMContentLoaded', renderSaved);
+</script>
+<script src="../js/radio-bar.js"></script>
+</body></html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premium — TRAMPO</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header class="header">
+  <nav class="nav container">
+    <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="../index.html">Início</a></li><li><a href="dispatch.html">Disparar CV</a></li>
+      <li><a href="profile.html">Meu Perfil</a></li><li><a href="routes.html">Rotas</a></li>
+      <li><a href="premium.html" class="active">Premium 👑</a></li><li><a href="support.html">Suporte</a></li>
+    </ul>
+    <div class="nav-auth" id="navAuth">
+      <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button>
+    </div>
+    <div class="nav-user hidden" id="navUser">
+      <span class="badge badge-free hidden" id="navBadge">Free</span>
+      <span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span>
+      <div class="avatar" id="navAvatar">?</div>
+      <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button>
+    </div>
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+  </nav>
+</header>
+
+<!-- HERO PREMIUM -->
+<section style="background:linear-gradient(135deg,var(--navy),#0F3A25);padding:120px 0 80px;text-align:center;position:relative;overflow:hidden">
+  <div style="position:absolute;top:-50%;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(0,200,83,0.1) 0%,transparent 70%);pointer-events:none"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,200,83,0.15);border:1px solid rgba(0,200,83,0.3);color:var(--green);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px;letter-spacing:0.5px">
+      👑 TRAMPO Premium
+    </div>
+    <h1 style="font-family:'Syne',sans-serif;font-size:clamp(36px,5vw,60px);font-weight:800;color:white;letter-spacing:-2px;margin-bottom:20px">Maximize suas chances de<br><span style="color:var(--green)">ser contratado</span></h1>
+    <p style="font-size:18px;color:rgba(255,255,255,0.6);max-width:560px;margin:0 auto 48px;line-height:1.7">Com o Premium, você aparece no topo para os recrutadores, recebe alertas antes de todo mundo e tem 6x mais envios por dia.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary btn-lg" onclick="handleUpgrade('monthly')">🚀 Começar Agora — R$ 29/mês</button>
+      <button class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.2)" onclick="handleUpgrade('annual')">💰 Anual — R$ 280/ano (-20%)</button>
+    </div>
+    <p style="font-size:13px;color:rgba(255,255,255,0.3);margin-top:16px">7 dias grátis · Cancela quando quiser · Sem compromisso</p>
+  </div>
+</section>
+
+<!-- COMPARAÇÃO -->
+<section style="padding:80px 0;background:white">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-tag">Comparação de Planos</span>
+      <h2 class="section-title">Free vs Premium</h2>
+    </div>
+    <div class="pricing-grid">
+      <!-- FREE -->
+      <div class="pricing-card">
+        <div class="pricing-name">Plano Free</div>
+        <div class="pricing-price">R$ <span style="font-size:48px">0</span></div>
+        <div class="pricing-period">Para sempre gratuito</div>
+        <ul class="pricing-features">
+          <li><span class="feat-check">✓</span> 5 envios de currículo por dia</li>
+          <li><span class="feat-check">✓</span> Análise de perfil com IA</li>
+          <li><span class="feat-check">✓</span> Matching básico de vagas</li>
+          <li><span class="feat-check">✓</span> Email de confirmação de envios</li>
+          <li><span class="feat-check">✓</span> Cálculo de rotas</li>
+          <li><span class="feat-x">✗</span> Notificações em tempo real</li>
+          <li><span class="feat-x">✗</span> Destaque no ranking (Top 3)</li>
+          <li><span class="feat-x">✗</span> Relatórios mensais PDF</li>
+          <li><span class="feat-x">✗</span> Suporte prioritário (2h)</li>
+          <li><span class="feat-x">✗</span> Alertas via WhatsApp</li>
+        </ul>
+        <button class="btn btn-secondary btn-lg btn-block" onclick="openAuthModal('register')">Criar Conta Grátis</button>
+      </div>
+      <!-- PREMIUM -->
+      <div class="pricing-card featured">
+        <div class="pricing-badge">✨ Mais Popular</div>
+        <div class="pricing-name" style="color:var(--green)">Plano Premium</div>
+        <div class="pricing-price">R$ <span style="font-size:48px">29</span></div>
+        <div class="pricing-period">por mês · ou R$280/ano (20% off)</div>
+        <ul class="pricing-features">
+          <li><span class="feat-check">✓</span> <strong>30 envios de currículo por dia</strong></li>
+          <li><span class="feat-check">✓</span> Análise de perfil IA em tempo real</li>
+          <li><span class="feat-check">✓</span> Matching avançado e personalizado</li>
+          <li><span class="feat-check">✓</span> Email de confirmação com rastreamento</li>
+          <li><span class="feat-check">✓</span> Cálculo de rotas avançado</li>
+          <li><span class="feat-check">✓</span> <strong>Notificações em tempo real</strong></li>
+          <li><span class="feat-check">✓</span> <strong>Top 3 no ranking de candidatos</strong></li>
+          <li><span class="feat-check">✓</span> <strong>Relatórios mensais em PDF</strong></li>
+          <li><span class="feat-check">✓</span> <strong>Suporte VIP — resposta em 2h</strong></li>
+          <li><span class="feat-check">✓</span> <strong>Alertas via WhatsApp</strong></li>
+        </ul>
+        <button class="btn btn-primary btn-lg btn-block" onclick="handleUpgrade('monthly')">👑 Ativar Premium Agora</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFÍCIOS -->
+<section style="padding:80px 0;background:var(--gray-50)">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-tag">Benefícios</span>
+      <h2 class="section-title">Por que vale a pena?</h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🚀</div>
+        <h3>5x mais oportunidades</h3>
+        <p>De 5 para 30 envios por dia. Mais currículos enviados = mais chances de ser chamado para entrevista.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">⚡</div>
+        <h3>Notificações em tempo real</h3>
+        <p>Vaga saiu agora? Você já recebe alerta. Seu currículo chega horas antes dos candidatos gratuitos.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">👑</div>
+        <h3>Destaque Top 3</h3>
+        <p>Seu currículo aparece com badge Premium no topo da lista dos recrutadores. Sai na frente da multidão.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">📊</div>
+        <h3>Relatórios completos</h3>
+        <p>Veja quem visualizou, quem respondeu e qual sua taxa de aprovação. Dados para melhorar sua estratégia.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">💬</div>
+        <h3>Suporte VIP — 2 horas</h3>
+        <p>Problema? Dúvida? Nossa equipe responde em menos de 2 horas. Chat ao vivo disponível.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">📱</div>
+        <h3>Alertas WhatsApp</h3>
+        <p>Receba as melhores vagas direto no seu WhatsApp, com match acima de 85% do seu perfil.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="padding:80px 0;background:white">
+  <div class="container">
+    <div class="section-header text-center"><span class="section-tag">Dúvidas Frequentes</span><h2 class="section-title">Perguntas sobre o Premium</h2></div>
+    <div style="max-width:720px;margin:0 auto">
+      <div class="faq-item" onclick="toggleFaq(this)" style="border:1.5px solid var(--gray-100);border-radius:var(--radius);padding:20px;margin-bottom:12px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;color:var(--navy)">Posso cancelar a qualquer momento? <span class="faq-arrow">▼</span></div>
+        <div class="faq-body" style="display:none;margin-top:12px;font-size:14px;color:var(--gray-600);line-height:1.7">Sim! Você pode cancelar com um clique no painel. Não há multas nem períodos mínimos. O acesso continua até o fim do período já pago.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)" style="border:1.5px solid var(--gray-100);border-radius:var(--radius);padding:20px;margin-bottom:12px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;color:var(--navy)">O período de 7 dias grátis exige cartão? <span class="faq-arrow">▼</span></div>
+        <div class="faq-body" style="display:none;margin-top:12px;font-size:14px;color:var(--gray-600);line-height:1.7">Não cobramos nada nos 7 primeiros dias. Você só precisa do cartão para continuar após o trial. Pode cancelar antes e não paga nada.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)" style="border:1.5px solid var(--gray-100);border-radius:var(--radius);padding:20px;margin-bottom:12px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;color:var(--navy)">Como funciona o plano anual? <span class="faq-arrow">▼</span></div>
+        <div class="faq-body" style="display:none;margin-top:12px;font-size:14px;color:var(--gray-600);line-height:1.7">Você paga R$280 de uma vez e tem acesso por 12 meses. Isso equivale a pagar apenas R$23,33/mês — uma economia de 20% comparado ao plano mensal.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)" style="border:1.5px solid var(--gray-100);border-radius:var(--radius);padding:20px;margin-bottom:12px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;color:var(--navy)">Quais formas de pagamento são aceitas? <span class="faq-arrow">▼</span></div>
+        <div class="faq-body" style="display:none;margin-top:12px;font-size:14px;color:var(--gray-600);line-height:1.7">Aceitamos todos os cartões de crédito (Visa, Mastercard, Elo), débito e Pix. O processamento é 100% seguro via Stripe.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODAL AUTH -->
+<div class="modal-overlay" id="authModal"><div class="modal"><button class="modal-close" onclick="closeAuthModal()">✕</button><div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div><div class="modal-tabs"><button class="modal-tab active" data-tab="login">Entrar</button><button class="modal-tab" data-tab="register">Criar Conta</button></div><form id="loginForm"><div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div><button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button></form><form id="registerForm" class="hidden"><div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" placeholder="Seu nome" required></div><div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div><div class="form-group"><label class="form-label">Sou um</label><select id="regRole" class="form-input form-select"><option value="candidate">👤 Candidato</option><option value="recruiter">🏢 Recrutador</option></select></div><button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button></form></div></div>
+
+<script src="../js/main.js"></script>
+<script>
+function toggleFaq(el) {
+  const body = el.querySelector('.faq-body');
+  const arrow = el.querySelector('.faq-arrow');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▼' : '▲';
+  el.style.borderColor = isOpen ? 'var(--gray-100)' : 'var(--green)';
+}
+
+async function handleUpgrade(plan) {
+  if (!Auth.isLoggedIn()) { openAuthModal('register'); return; }
+  try {
+    const data = await post('/payments/create-checkout', { plan });
+    if (data.checkout_url) window.location.href = data.checkout_url;
+    else toast('Redirecionando para pagamento...','info');
+  } catch (err) {
+    // Demo mode - sem Stripe configurado
+    toast('💳 Pagamento: configure o Stripe no .env para ativar!','warning');
+  }
+}
+</script>
+<script src="../js/radio-bar.js"></script>
+</body></html>

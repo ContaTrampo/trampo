@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Perfil — TRAMPO</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header class="header">
+  <nav class="nav container">
+    <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="../index.html">Início</a></li><li><a href="dispatch.html">Disparar CV</a></li>
+      <li><a href="profile.html" class="active">Meu Perfil</a></li><li><a href="routes.html">Rotas</a></li>
+      <li><a href="premium.html">Premium 👑</a></li><li><a href="support.html">Suporte</a></li>
+    </ul>
+    <div class="nav-auth" id="navAuth">
+      <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button>
+    </div>
+    <div class="nav-user hidden" id="navUser">
+      <span class="badge badge-free hidden" id="navBadge">Free</span>
+      <span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span>
+      <div class="avatar" id="navAvatar">?</div>
+      <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button>
+    </div>
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+  </nav>
+</header>
+
+<div class="page-header"><div class="container"><h1>👤 Meu Perfil Profissional</h1><p>Quanto mais completo seu perfil, melhor o match com as vagas.</p></div></div>
+
+<div class="container" style="padding:40px 0 80px">
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:32px;align-items:start">
+
+    <!-- SIDEBAR PERFIL -->
+    <div>
+      <div class="card text-center" style="margin-bottom:20px">
+        <div class="sidebar-avatar" id="profileAvatar">?</div>
+        <div class="sidebar-name" id="profileName">Carregando...</div>
+        <div class="sidebar-role" id="profileTitle">—</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+          <div style="font-size:13px;color:var(--gray-500)" id="profileLocation">📍 —</div>
+          <div style="font-size:13px;color:var(--gray-500)" id="profileExperience">💼 —</div>
+        </div>
+        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--gray-100)">
+          <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Completude do Perfil</div>
+          <div class="progress-bar"><div class="progress-fill" id="completionBar" style="width:20%"></div></div>
+          <div style="font-size:13px;color:var(--green);font-weight:700;margin-top:6px" id="completionText">20%</div>
+        </div>
+      </div>
+
+      <!-- UPLOAD CV -->
+      <div class="card">
+        <h4 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px">📄 Currículo</h4>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('cvFile').click()">
+          <div class="upload-icon" id="uploadIcon">📁</div>
+          <h3 id="uploadTitle">Envie seu Currículo</h3>
+          <p id="uploadSub">PDF ou DOCX · Máx 5MB</p>
+          <input type="file" id="cvFile" accept=".pdf,.docx,.doc" style="display:none" onchange="handleFileUpload(this)">
+        </div>
+        <button class="btn btn-primary btn-sm btn-block" style="margin-top:12px" onclick="document.getElementById('cvFile').click()">Selecionar Arquivo</button>
+      </div>
+    </div>
+
+    <!-- FORMULÁRIO PRINCIPAL -->
+    <div>
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">📝 Informações Profissionais</h3>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">Cargo / Profissão</label><input id="jobTitle" class="form-input" placeholder="Ex: Desenvolvedor Python" oninput="calcCompletion()"></div>
+          <div class="form-group"><label class="form-label">Anos de Experiência</label><input id="yearsExp" type="number" class="form-input" placeholder="Ex: 5" min="0" max="50" oninput="calcCompletion()"></div>
+          <div class="form-group"><label class="form-label">Nível de Senioridade</label>
+            <select id="seniority" class="form-input form-select">
+              <option value="">Selecione...</option><option>Estagiário</option><option>Junior</option><option>Pleno</option><option>Senior</option><option>Lead / Especialista</option><option>Gerente / Head</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Localização</label><input id="location" class="form-input" placeholder="Ex: São Paulo, SP" oninput="calcCompletion()"></div>
+          <div class="form-group"><label class="form-label">Pretensão Salarial (R$)</label>
+            <div style="display:flex;gap:8px">
+              <input id="salaryMin" type="number" class="form-input" placeholder="Mínimo"><input id="salaryMax" type="number" class="form-input" placeholder="Máximo">
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Disponibilidade</label>
+            <select id="availability" class="form-input form-select">
+              <option value="immediate">Imediata</option><option value="2weeks">2 semanas</option><option value="1month">1 mês</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Modalidade de Trabalho</label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="radio" name="workMode" value="any" checked> Qualquer uma</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="radio" name="workMode" value="remote"> 🏠 Remoto</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="radio" name="workMode" value="hybrid"> 🔀 Híbrido</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="radio" name="workMode" value="onsite"> 🏢 Presencial</label>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Skills / Tecnologias (separadas por vírgula)</label><input id="skills" class="form-input" placeholder="Ex: Python, Django, React, AWS, SQL" oninput="updateSkillBars();calcCompletion()"></div>
+        <div class="form-group"><label class="form-label">Resumo Profissional</label><textarea id="bio" class="form-input" rows="4" placeholder="Fale sobre você, suas conquistas e objetivos profissionais..." oninput="calcCompletion()"></textarea></div>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">LinkedIn</label><input id="linkedin" class="form-input" placeholder="linkedin.com/in/seuperfil"></div>
+          <div class="form-group"><label class="form-label">GitHub / Portfólio</label><input id="github" class="form-input" placeholder="github.com/seuusuario"></div>
+          <div class="form-group"><label class="form-label">WhatsApp</label><input id="whatsapp" class="form-input" placeholder="(11) 99999-9999"></div>
+          <div class="form-group"><label class="form-label">Telefone</label><input id="phone" class="form-input" placeholder="(11) 99999-9999"></div>
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="saveProfile()" id="saveBtn">💾 Salvar Perfil</button>
+      </div>
+
+      <!-- SKILLS VISUAIS -->
+      <div class="card" id="skillsCard">
+        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">🔧 Skills Detectadas</h3>
+        <div id="skillBars"><p style="color:var(--gray-500);font-size:14px">Preencha o campo de skills acima para visualizar.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AUTH -->
+<div class="modal-overlay" id="authModal"><div class="modal"><button class="modal-close" onclick="closeAuthModal()">✕</button><div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div><div class="modal-tabs"><button class="modal-tab active" data-tab="login">Entrar</button><button class="modal-tab" data-tab="register">Criar Conta</button></div><form id="loginForm"><div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div><button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button></form><form id="registerForm" class="hidden"><div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" placeholder="Seu nome" required></div><div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div><div class="form-group"><label class="form-label">Sou um</label><select id="regRole" class="form-input form-select"><option value="candidate">👤 Candidato</option><option value="recruiter">🏢 Recrutador</option></select></div><button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button></form></div></div>
+
+<script src="../js/main.js"></script>
+<script>
+async function loadProfile() {
+  if (!Auth.isLoggedIn()) return;
+  try {
+    const data = await get('/candidates/profile');
+    const p = data.profile;
+    const user = Auth.getUser();
+    if (user) {
+      const initials = user.name?.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)||'?';
+      document.getElementById('profileAvatar').textContent = initials;
+      document.getElementById('profileName').textContent = user.name;
+    }
+    if (p) {
+      document.getElementById('jobTitle').value = p.job_title||'';
+      document.getElementById('yearsExp').value = p.years_experience||'';
+      document.getElementById('seniority').value = p.seniority||'';
+      document.getElementById('location').value = p.location||'';
+      document.getElementById('salaryMin').value = p.salary_min||'';
+      document.getElementById('salaryMax').value = p.salary_max||'';
+      document.getElementById('skills').value = (p.skills||[]).join(', ');
+      document.getElementById('bio').value = p.bio||'';
+      document.getElementById('linkedin').value = p.linkedin_url||'';
+      document.getElementById('github').value = p.github_url||'';
+      document.getElementById('whatsapp').value = p.whatsapp||'';
+      document.getElementById('phone').value = p.phone||'';
+      document.getElementById('profileTitle').textContent = p.job_title||'—';
+      document.getElementById('profileLocation').textContent = '📍 ' + (p.location||'Localização não informada');
+      document.getElementById('profileExperience').textContent = '💼 ' + (p.years_experience||0) + ' anos de experiência';
+      updateSkillBars();
+      calcCompletion();
+    }
+  } catch {}
+}
+
+function calcCompletion() {
+  const fields = ['jobTitle','yearsExp','location','skills','bio'];
+  const filled = fields.filter(f => document.getElementById(f)?.value?.trim()).length;
+  const pct = Math.round((filled/fields.length)*100);
+  document.getElementById('completionBar').style.width = pct+'%';
+  document.getElementById('completionText').textContent = pct+'% completo';
+}
+
+function updateSkillBars() {
+  const val = document.getElementById('skills').value;
+  if (!val.trim()) return;
+  const skills = val.split(',').map(s=>s.trim()).filter(Boolean).slice(0,8);
+  const weights = [95,88,82,75,70,68,65,60];
+  document.getElementById('skillBars').innerHTML = skills.map((s,i)=>`
+    <div class="skill-item">
+      <div class="skill-header"><span>${s}</span><span>${weights[i]||60}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${weights[i]||60}%"></div></div>
+    </div>
+  `).join('');
+}
+
+async function saveProfile() {
+  if (!Auth.isLoggedIn()) { openAuthModal('login'); return; }
+  const btn = document.getElementById('saveBtn');
+  setLoading(btn, true);
+  const workMode = document.querySelector('input[name="workMode"]:checked')?.value || 'any';
+  try {
+    await put('/candidates/profile', {
+      job_title: document.getElementById('jobTitle').value,
+      years_experience: parseInt(document.getElementById('yearsExp').value)||0,
+      seniority: document.getElementById('seniority').value,
+      location: document.getElementById('location').value,
+      salary_min: parseInt(document.getElementById('salaryMin').value)||null,
+      salary_max: parseInt(document.getElementById('salaryMax').value)||null,
+      availability: document.getElementById('availability').value,
+      work_mode: workMode,
+      skills: document.getElementById('skills').value,
+      bio: document.getElementById('bio').value,
+      linkedin_url: document.getElementById('linkedin').value,
+      github_url: document.getElementById('github').value,
+      whatsapp: document.getElementById('whatsapp').value,
+      phone: document.getElementById('phone').value,
+    });
+    toast('✅ Perfil salvo com sucesso!');
+    document.getElementById('profileTitle').textContent = document.getElementById('jobTitle').value||'—';
+    document.getElementById('profileLocation').textContent = '📍 ' + (document.getElementById('location').value||'—');
+  } catch (err) { toast(err.message,'error'); }
+  finally { setLoading(btn, false); }
+}
+
+function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('Arquivo muito grande. Máximo 5MB.','error'); return; }
+  document.getElementById('uploadIcon').textContent = '✅';
+  document.getElementById('uploadTitle').textContent = file.name;
+  document.getElementById('uploadSub').textContent = (file.size/1024/1024).toFixed(2)+'MB';
+  toast('Currículo carregado! Salve o perfil para enviar.');
+  calcCompletion();
+}
+
+document.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+<script src="../js/radio-bar.js"></script>
+</body></html>

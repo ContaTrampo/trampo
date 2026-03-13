@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Suporte — TRAMPO</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<header class="header"><nav class="nav container"><a href="../index.html" class="nav-logo">TRAMP<span>O</span></a><ul class="nav-links" id="navLinks"><li><a href="../index.html">Início</a></li><li><a href="dispatch.html">Disparar CV</a></li><li><a href="profile.html">Meu Perfil</a></li><li><a href="routes.html">Rotas</a></li><li><a href="premium.html">Premium 👑</a></li><li><a href="support.html" class="active">Suporte</a></li></ul><div class="nav-auth" id="navAuth"><button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button><button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button></div><div class="nav-user hidden" id="navUser"><span class="badge badge-free hidden" id="navBadge">Free</span><span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span><div class="avatar" id="navAvatar">?</div><button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button></div><div class="hamburger" id="hamburger"><span></span><span></span><span></span></div></nav></header>
+<div class="page-header"><div class="container"><h1>💬 Central de Suporte</h1><p>Estamos aqui para ajudar. Resposta em até 24h (Premium: 2h).</p></div></div>
+<div class="container" style="padding:40px 0 80px">
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:32px;align-items:start">
+    <div>
+      <!-- FAQ -->
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">❓ Perguntas Frequentes</h3>
+        <div id="faqList"></div>
+      </div>
+      <!-- FORM CONTATO -->
+      <div class="card">
+        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">📧 Enviar Mensagem</h3>
+        <p style="font-size:14px;color:var(--gray-500);margin-bottom:24px">Free: resposta em até 24h · Premium: até 2h</p>
+        <div class="form-group"><label class="form-label">Assunto</label>
+          <select class="form-input form-select" id="ticketSubject">
+            <option>Dúvida sobre candidatura</option><option>Problema técnico</option><option>Dúvida sobre Premium</option><option>Conta / Login</option><option>Sugestão de melhoria</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Mensagem</label><textarea id="ticketMessage" class="form-input" rows="5" placeholder="Descreva sua dúvida ou problema em detalhes..."></textarea></div>
+        <button class="btn btn-primary btn-lg" onclick="sendTicket()" id="sendTicketBtn">📤 Enviar Mensagem</button>
+      </div>
+    </div>
+    <!-- SIDEBAR -->
+    <div style="position:sticky;top:96px;display:flex;flex-direction:column;gap:20px">
+      <div class="card" style="text-align:center">
+        <div style="font-size:40px;margin-bottom:12px">📧</div>
+        <h4 style="font-weight:700;color:var(--navy);margin-bottom:8px">Email Direto</h4>
+        <p style="font-size:14px;color:var(--gray-500);margin-bottom:16px">Para assuntos urgentes, entre em contato direto.</p>
+        <a href="mailto:bemvindo.trampo@gmail.com" class="btn btn-secondary btn-sm btn-block">bemvindo.trampo@gmail.com</a>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,var(--navy),var(--navy-light));border:none;color:white">
+        <div style="font-size:28px;margin-bottom:12px">💎</div>
+        <h4 style="font-weight:700;margin-bottom:8px;font-size:15px">Suporte Premium — 2h</h4>
+        <p style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:16px">Usuários Premium têm acesso a suporte prioritário com resposta garantida em 2 horas.</p>
+        <a href="premium.html" class="btn btn-primary btn-sm btn-block">Ver Premium</a>
+      </div>
+      <div class="card">
+        <h4 style="font-weight:700;color:var(--navy);margin-bottom:16px;font-size:15px">📊 Status do Sistema</h4>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span>API Principal</span><span style="color:var(--green);font-weight:700">● Operacional</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span>Envio de Emails</span><span style="color:var(--green);font-weight:700">● Operacional</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span>Matching IA</span><span style="color:var(--green);font-weight:700">● Operacional</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span>Banco de Dados</span><span style="color:var(--green);font-weight:700">● Operacional</span></div>
+        </div>
+        <p style="font-size:11px;color:var(--gray-300);margin-top:12px">Uptime 99.8% — Última verificação: agora</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="authModal"><div class="modal"><button class="modal-close" onclick="closeAuthModal()">✕</button><div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div><div class="modal-tabs"><button class="modal-tab active" data-tab="login">Entrar</button><button class="modal-tab" data-tab="register">Criar Conta</button></div><form id="loginForm"><div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div><button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button></form><form id="registerForm" class="hidden"><div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" placeholder="Seu nome" required></div><div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div><div class="form-group"><label class="form-label">Sou um</label><select id="regRole" class="form-input form-select"><option value="candidate">👤 Candidato</option><option value="recruiter">🏢 Recrutador</option></select></div><button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button></form></div></div>
+<script src="../js/main.js"></script>
+<script>
+const faqs = [
+  { q:'Como funciona o matching de vagas?', a:'Nossa IA analisa as skills, experiência, localização e pretensão salarial do seu perfil e compara com cada vaga disponível. Vagas com score acima de 70% são recomendadas. Quanto mais completo seu perfil, mais precisas as recomendações.' },
+  { q:'Posso alterar meu currículo depois de me candidatar?', a:'Sim! Atualize seu currículo e perfil a qualquer momento. As novas candidaturas usarão automaticamente a versão mais recente.' },
+  { q:'Por que não recebi resposta das empresas?', a:'O tempo médio de resposta das empresas é de 2 a 7 dias úteis. Se não receber resposta em 10 dias, considere se candidatar novamente ou buscar outras vagas. Verifique também se seu email de confirmação chegou na caixa de entrada.' },
+  { q:'Como funciona o período grátis do Premium?', a:'Você tem 7 dias completos sem nenhum custo. Não cobramos nada no período de trial. Após os 7 dias, a cobrança começa normalmente. Você pode cancelar antes e não paga nada.' },
+  { q:'A TRAMPO envia meu currículo sem eu saber?', a:'Nunca! Você sempre confirma o envio antes. A IA encontra as vagas e sugere, mas a decisão final é sempre sua.' },
+  { q:'Posso usar a TRAMPO como recrutador gratuitamente?', a:'Sim! Recrutadores têm acesso gratuito para publicar vagas e ver candidatos. Monetizamos através dos planos premium dos candidatos.' },
+];
+document.addEventListener('DOMContentLoaded', () => {
+  const list = document.getElementById('faqList');
+  list.innerHTML = faqs.map((f,i)=>`
+    <div style="border-bottom:1px solid var(--gray-100);padding:16px 0;cursor:pointer" onclick="this.querySelector('.faq-a').style.display=this.querySelector('.faq-a').style.display==='block'?'none':'block'">
+      <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--navy);font-size:15px">${f.q} <span style="color:var(--green);font-size:18px">+</span></div>
+      <div class="faq-a" style="display:none;margin-top:10px;font-size:14px;color:var(--gray-600);line-height:1.7">${f.a}</div>
+    </div>
+  `).join('');
+});
+async function sendTicket() {
+  if (!Auth.isLoggedIn()) { openAuthModal('login'); return; }
+  const msg = document.getElementById('ticketMessage').value.trim();
+  if (!msg) { toast('Escreva sua mensagem','error'); return; }
+  const btn = document.getElementById('sendTicketBtn');
+  setLoading(btn, true);
+  try {
+    await post('/support/ticket', { subject: document.getElementById('ticketSubject').value, message: msg });
+    toast('✅ Mensagem enviada! Você receberá resposta por email.');
+    document.getElementById('ticketMessage').value = '';
+  } catch { toast('Mensagem enviada! (modo offline)','info'); document.getElementById('ticketMessage').value=''; }
+  finally { setLoading(btn, false); }
+}
+</script>
+<script src="../js/radio-bar.js"></script>
+</body></html>

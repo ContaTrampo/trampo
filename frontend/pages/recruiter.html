@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Área do Recrutador — TRAMPO</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.recruiter-layout{display:grid;grid-template-columns:240px 1fr;gap:24px;padding:32px 0 100px}
+.side-nav{background:var(--ink-card);border:1.5px solid var(--ink-border);border-radius:var(--radius-lg);padding:20px;position:sticky;top:88px;align-self:start}
+.side-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;width:100%;transition:all var(--transition);font-family:'DM Sans',sans-serif;text-align:left}
+.side-link:hover,.side-link.active{background:var(--green-faint);color:var(--green)}
+.section-panel{display:none}.section-panel.active{display:block}
+.warning-box{background:rgba(255,184,48,.06);border-radius:var(--radius-sm);padding:16px;font-size:14px;border:1px solid rgba(255,184,48,.2);color:var(--muted-light)}
+.warning-box strong{color:var(--warn)}
+@media(max-width:900px){.recruiter-layout{grid-template-columns:1fr}.side-nav{position:static}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <nav class="nav container">
+    <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
+    <ul class="nav-links" id="nav-menu">
+      <li><a href="../index.html"           class="nav-link">Início</a></li>
+      <li><a href="../pages/dispatch.html"  class="nav-link">Vagas</a></li>
+      <li><a href="../pages/recruiter.html" class="nav-link active">Recrutador</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="nav-auth" class="flex gap-2">
+        <a href="../index.html" class="btn btn-primary btn-sm">Entrar como Recrutador</a>
+      </div>
+      <div id="nav-user" class="nav-user hidden">
+        <a href="#" class="nav-avatar" id="nav-avatar"></a>
+        <span class="text-sm" id="nav-username"></span>
+        <button class="btn btn-ghost btn-sm" data-logout>Sair</button>
+      </div>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<div class="page-header">
+  <div class="container">
+    <h1>🏢 Área do Recrutador</h1>
+    <p>Publique vagas e receba candidatos rankeados por IA</p>
+  </div>
+</div>
+
+<!-- Não logado / não é recrutador -->
+<div id="auth-required" class="hidden container" style="text-align:center;padding:80px 0">
+  <div style="font-size:64px;margin-bottom:16px">🔐</div>
+  <h2 style="margin-bottom:8px;color:var(--white)">Acesso restrito a recrutadores</h2>
+  <p class="text-muted" style="margin-bottom:24px">Faça login com uma conta de recrutador para acessar esta área</p>
+  <a href="../index.html" class="btn btn-primary btn-lg">Fazer login</a>
+</div>
+
+<!-- Área logada -->
+<div id="recruiter-content" class="hidden">
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="grid-4" style="margin:24px 0 0" id="stats-grid">
+      <div class="stat-card"><div class="stat-num green" id="st-jobs">—</div><div class="stat-label">Vagas publicadas</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-apps">—</div><div class="stat-label">Candidaturas</div></div>
+      <div class="stat-card"><div class="stat-num green" id="st-active">—</div><div class="stat-label">Vagas ativas</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-interviews">—</div><div class="stat-label">Entrevistas</div></div>
+    </div>
+
+    <div class="recruiter-layout">
+
+      <!-- Side nav -->
+      <aside class="side-nav">
+        <button class="side-link active" onclick="showSection('my-jobs',this)">📋 Minhas Vagas</button>
+        <button class="side-link" onclick="showSection('post-job',this)">➕ Publicar Vaga</button>
+        <button class="side-link" onclick="showSection('candidates',this)">👥 Candidatos</button>
+      </aside>
+
+      <div>
+
+        <!-- MINHAS VAGAS -->
+        <div class="section-panel active" id="panel-my-jobs">
+          <div class="flex-between" style="margin-bottom:20px">
+            <h3 style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--white)">Minhas vagas</h3>
+            <button class="btn btn-primary btn-sm" onclick="document.querySelectorAll('.side-link').forEach(b=>b.classList.remove('active'));document.querySelector('[onclick*=post-job]').classList.add('active');showSection('post-job')">+ Nova vaga</button>
+          </div>
+          <div id="my-jobs-list">
+            <div class="text-center" style="padding:40px;color:var(--muted)"><div class="spinner spinner-green" style="margin:0 auto 12px"></div>Carregando…</div>
+          </div>
+        </div>
+
+        <!-- PUBLICAR VAGA -->
+        <div class="section-panel" id="panel-post-job">
+          <div class="card">
+            <h3 style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px;color:var(--white)">➕ Publicar nova vaga</h3>
+            <p class="text-sm text-muted" style="margin-bottom:24px">Após publicar, efetue o pagamento de <strong style="color:var(--green)">R$ 50</strong> para ativar a vaga.</p>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div class="grid-2" style="gap:16px">
+                <div class="form-group">
+                  <label class="form-label">Título da vaga *</label>
+                  <input type="text" id="j-title" class="form-input" placeholder="Desenvolvedor Python Sr.">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Empresa *</label>
+                  <input type="text" id="j-company" class="form-input" placeholder="Minha Empresa S.A.">
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Descrição da vaga *</label>
+                  <textarea id="j-desc" class="form-input" rows="5" placeholder="Responsabilidades, requisitos e diferenciais…"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CEP da empresa</label>
+                  <input type="text" id="j-cep" class="form-input" placeholder="40000-000" maxlength="9"
+                    oninput="this.value=this.value.replace(/\D/g,'').replace(/(\d{5})(\d)/,'$1-$2')"
+                    onblur="fillCEP(this.value,{cidade:'j-cidade',estado:'j-estado'})">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Localização</label>
+                  <input type="text" id="j-location" class="form-input" placeholder="Salvador, BA">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cidade</label>
+                  <input type="text" id="j-cidade" class="form-input" placeholder="Salvador">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Estado</label>
+                  <select id="j-estado" class="form-input form-select">
+                    <option value="">UF</option>
+                    <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+                    <option selected>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                    <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+                    <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+                    <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+                    <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+                    <option>SP</option><option>SE</option><option>TO</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Modo de trabalho</label>
+                  <select id="j-mode" class="form-input form-select">
+                    <option value="onsite">🏢 Presencial</option>
+                    <option value="hybrid">🔄 Híbrido</option>
+                    <option value="remote">🏠 Remoto</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tipo de contrato</label>
+                  <select id="j-contract" class="form-input form-select">
+                    <option value="clt">CLT</option>
+                    <option value="pj">PJ</option>
+                    <option value="freelancer">Freelancer</option>
+                    <option value="internship">Estágio</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Salário mínimo (R$)</label>
+                  <input type="number" id="j-sal-min" class="form-input" placeholder="5000">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Salário máximo (R$)</label>
+                  <input type="number" id="j-sal-max" class="form-input" placeholder="8000">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Experiência mínima (anos)</label>
+                  <input type="number" id="j-exp" class="form-input" min="0" placeholder="2">
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Skills requeridas (separadas por vírgula)</label>
+                  <input type="text" id="j-skills" class="form-input" placeholder="Python, Django, PostgreSQL, Docker">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email de contato</label>
+                  <input type="email" id="j-email" class="form-input" placeholder="vagas@empresa.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">WhatsApp de contato</label>
+                  <input type="tel" id="j-whatsapp" class="form-input" placeholder="(71) 99999-9999">
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Benefícios</label>
+                  <textarea id="j-benefits" class="form-input" rows="2" placeholder="VR, VT, Plano de saúde, Home office parcial…"></textarea>
+                </div>
+              </div>
+              <div class="warning-box">
+                💳 <strong>Aviso:</strong> Após publicar, você será redirecionado para o pagamento de <strong>R$ 50,00</strong>. A vaga só fica visível após confirmação.
+              </div>
+              <button class="btn btn-primary btn-lg" id="post-job-btn" onclick="postJob()">Publicar vaga — R$ 50</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CANDIDATOS -->
+        <div class="section-panel" id="panel-candidates">
+          <div style="margin-bottom:20px">
+            <h3 style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:12px;color:var(--white)">👥 Buscar candidatos</h3>
+            <div class="search-bar" style="max-width:100%;margin:0;border-radius:var(--radius)">
+              <span style="font-size:18px;flex-shrink:0;color:var(--muted)">🔍</span>
+              <input type="text" id="cand-search" placeholder="Nome, cargo, skill…" autocomplete="off" onkeydown="if(event.key==='Enter')searchCandidates()">
+              <button class="btn btn-primary btn-sm" style="flex-shrink:0;border-radius:var(--radius-sm)" onclick="searchCandidates()">Buscar</button>
+            </div>
+          </div>
+          <div id="candidates-grid" class="grid-3">
+            <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
+              <div style="font-size:40px;margin-bottom:12px">👥</div>
+              <div>Use a busca acima para encontrar candidatos</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script>
+/* Auth */
+const user = Auth.user();
+if (!Auth.isLogged() || user?.role === 'candidate') {
+  document.getElementById('auth-required').classList.remove('hidden');
+} else {
+  document.getElementById('recruiter-content').classList.remove('hidden');
+  loadStats(); loadMyJobs();
+}
+
+function showSection(id, btn) {
+  document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.side-link').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+/* Stats */
+async function loadStats() {
+  const r = await apiFetch('/recruiters/stats');
+  if (!r || !r.ok) return;
+  const d = r.data;
+  document.getElementById('st-jobs').textContent       = d.total_jobs       ?? '—';
+  document.getElementById('st-apps').textContent       = d.total_applications ?? '—';
+  document.getElementById('st-active').textContent     = d.active_jobs      ?? '—';
+  document.getElementById('st-interviews').textContent = d.interviews        ?? '—';
+}
+
+/* Minhas Vagas */
+async function loadMyJobs() {
+  const r = await apiFetch('/recruiters/my-jobs');
+  const list = document.getElementById('my-jobs-list');
+  if (!r || !r.ok || !r.data.jobs?.length) {
+    list.innerHTML = `<div class="text-center" style="padding:64px;color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:12px">📋</div>
+      <div style="font-weight:700;color:var(--white);margin-bottom:16px">Nenhuma vaga publicada ainda</div>
+      <button class="btn btn-primary" onclick="document.querySelectorAll('.side-link').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.side-link')[1].classList.add('active');showSection('post-job')">Publicar primeira vaga</button>
+    </div>`; return;
+  }
+  list.innerHTML = r.data.jobs.map(j => `
+    <div class="card" style="margin-bottom:12px">
+      <div class="flex-between" style="flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--white)">${j.title}</div>
+          <div class="text-sm text-muted">${j.company} · ${j.cidade || j.location || '—'}</div>
+          <div class="text-xs text-muted" style="margin-top:4px">${fmtDate(j.posted_at)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="status status-${j.status}">${{active:'Ativa',closed:'Encerrada',pending_payment:'Aguardando pagamento'}[j.status]||j.status}</span>
+          ${!j.is_paid ? `<button class="btn btn-primary btn-sm" onclick="payJob(${j.id})">💳 Pagar R$ 50</button>` : ''}
+          <span class="text-sm text-muted">${j.applications_count} candidatura${j.applications_count!==1?'s':''}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* Publicar Vaga */
+async function postJob() {
+  const title   = document.getElementById('j-title').value.trim();
+  const company = document.getElementById('j-company').value.trim();
+  const desc    = document.getElementById('j-desc').value.trim();
+  if (!title || !company || !desc) { toast('Preencha título, empresa e descrição', 'warning'); return; }
+  const btn = document.getElementById('post-job-btn');
+  btnLoading(btn, true, 'Publicando…');
+  const r = await apiFetch('/jobs/', {
+    method: 'POST',
+    body: JSON.stringify({
+      title, company, description: desc,
+      cep:              document.getElementById('j-cep').value,
+      location:         document.getElementById('j-location').value,
+      cidade:           document.getElementById('j-cidade').value,
+      estado:           document.getElementById('j-estado').value,
+      work_mode:        document.getElementById('j-mode').value,
+      contract_type:    document.getElementById('j-contract').value,
+      salary_min:       parseInt(document.getElementById('j-sal-min').value)  || null,
+      salary_max:       parseInt(document.getElementById('j-sal-max').value)  || null,
+      required_experience: parseInt(document.getElementById('j-exp').value)   || 0,
+      required_skills:  document.getElementById('j-skills').value,
+      contact_email:    document.getElementById('j-email').value,
+      contact_whatsapp: document.getElementById('j-whatsapp').value,
+      benefits:         document.getElementById('j-benefits').value,
+    }),
+  });
+  btnLoading(btn, false);
+  if (!r || !r.ok) { toast(r?.data?.error || 'Erro ao publicar', 'error'); return; }
+  toast('Vaga criada! Redirecionando para pagamento… 💳', 'success', 5000);
+  payJob(r.data.job_id);
+}
+
+async function payJob(jobId) {
+  const r = await apiFetch(`/payments/pay-job/${jobId}`, { method: 'POST' });
+  if (!r || !r.ok) { toast(r?.data?.error || 'Erro no pagamento', 'error'); return; }
+  window.location.href = r.data.checkout_url;
+}
+
+/* Candidatos */
+async function searchCandidates() {
+  const q = document.getElementById('cand-search').value.trim();
+  const r = await apiFetch(`/candidates/search?q=${encodeURIComponent(q)}&per_page=9`);
+  const grid = document.getElementById('candidates-grid');
+  if (!r || !r.ok || !r.data.candidates?.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum candidato encontrado.</div>`; return;
+  }
+  grid.innerHTML = r.data.candidates.map(c => `
+    <div class="card">
+      <div style="display:flex;gap:12px;margin-bottom:12px;align-items:center">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--green);color:#000;font-family:'Syne',sans-serif;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${c.initials||'?'}</div>
+        <div>
+          <div style="font-weight:700;color:var(--white)">${c.name}</div>
+          <div class="text-sm text-muted">${c.profile?.job_title||'—'}</div>
+          <div class="text-xs text-muted">📍 ${c.city||'—'}</div>
+        </div>
+      </div>
+      <div>${(c.profile?.skills||[]).slice(0,4).map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>
+      ${c.is_premium?'<span class="badge badge-premium" style="margin-top:8px;display:inline-block">💎 Premium</span>':''}
+    </div>
+  `).join('');
+}
+</script>
+
+<script src="../js/radio-bar.js"></script>
+</body>
+</html>

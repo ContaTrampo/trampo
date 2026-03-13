@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRAMPO — Encontre a Vaga Perfeita com IA</title>
+  <meta name="description" content="Plataforma de matchmaking de carreiras. IA analisa seu currículo e envia automaticamente para as vagas certas.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header class="header">
+  <nav class="nav container">
+    <a href="index.html" class="nav-logo">TRAMP<span>O</span></a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html" class="active">Início</a></li>
+      <li><a href="pages/dispatch.html">Disparar CV</a></li>
+      <li><a href="pages/profile.html">Meu Perfil</a></li>
+      <li><a href="pages/routes.html">Rotas</a></li>
+      <li><a href="pages/premium.html">Premium 👑</a></li>
+      <li><a href="pages/support.html">Suporte</a></li>
+      <li><a href="pages/recruiter.html">Recrutadores</a></li>
+    </ul>
+
+    <div class="nav-auth" id="navAuth">
+      <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button>
+    </div>
+
+    <div class="nav-user hidden" id="navUser">
+      <span class="badge badge-free hidden" id="navBadge">Free</span>
+      <span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span>
+      <div class="avatar" id="navAvatar">?</div>
+      <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button>
+    </div>
+
+    <div class="hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </nav>
+</header>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span>✨</span> Plataforma com Inteligência Artificial
+      </div>
+      <h1>Seu currículo no lugar <span class="highlight">certo</span>, na hora certa</h1>
+      <p>A TRAMPO analisa seu perfil com IA e envia automaticamente seu currículo apenas para vagas que realmente combinam com você. Chega de perder tempo.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary btn-lg" onclick="openAuthModal('register')">
+          🚀 Começar Grátis Agora
+        </button>
+        <a href="pages/premium.html" class="btn btn-lg" style="background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.2)">
+          Ver Planos
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-number" data-target="12543">0</div>
+          <div class="stat-label">CVs Enviados</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" data-target="8234">0</div>
+          <div class="stat-label">Candidatos Ativos</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" data-target="1876">0</div>
+          <div class="stat-label">Vagas Publicadas</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">45%</div>
+          <div class="stat-label">Taxa de Resposta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─── -->
+<section class="features">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-tag">Como Funciona</span>
+      <h2 class="section-title">Tudo que você precisa para ser contratado</h2>
+      <p class="section-sub" style="margin:0 auto">Da análise do seu currículo até o envio inteligente — a TRAMPO faz o trabalho pesado por você.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon">📊</div>
+        <h3>Análise de Perfil</h3>
+        <p>A IA lê seu currículo, extrai suas skills, experiência e objetivos, e cria um perfil profissional completo automaticamente.</p>
+        <a href="pages/profile.html" class="feature-link">Ver meu perfil →</a>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🎯</div>
+        <h3>Match Inteligente</h3>
+        <p>Nosso algoritmo compara seu perfil com centenas de vagas e encontra as que têm mais de 70% de compatibilidade.</p>
+        <a href="pages/dispatch.html" class="feature-link">Ver vagas →</a>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">📤</div>
+        <h3>Envio Automático</h3>
+        <p>Com um clique, a IA escreve uma carta de apresentação personalizada para cada vaga e envia seu currículo em segundos.</p>
+        <a href="pages/dispatch.html" class="feature-link">Disparar agora →</a>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🗺️</div>
+        <h3>Rotas Inteligentes</h3>
+        <p>Calcule tempo, custo de Uber, transporte público e bike para sua entrevista — tudo antes de sair de casa.</p>
+        <a href="pages/routes.html" class="feature-link">Calcular rota →</a>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">✅</div>
+        <h3>Confirmação em Tempo Real</h3>
+        <p>Você e a empresa recebem um email assim que seu currículo chega. Nada fica perdido no limbo.</p>
+        <a href="pages/profile.html" class="feature-link">Configurar alertas →</a>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">👑</div>
+        <h3>Premium com Destaque</h3>
+        <p>Usuários premium aparecem no top 3 para os recrutadores, recebem notificações antes de todos e têm 30 envios/dia.</p>
+        <a href="pages/premium.html" class="feature-link">Conhecer Premium →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── VAGAS ─── -->
+<section class="jobs-section">
+  <div class="container">
+    <div class="section-header flex justify-between items-center" style="margin-bottom:40px">
+      <div>
+        <span class="section-tag">Vagas em Destaque</span>
+        <h2 class="section-title">Oportunidades esperando por você</h2>
+      </div>
+      <a href="pages/dispatch.html" class="btn btn-secondary">Ver todas →</a>
+    </div>
+    <div class="jobs-grid" id="jobsGrid">
+      <!-- Vagas carregadas via JS ou estáticas abaixo -->
+      <div class="job-card fade-in">
+        <div class="job-card-header">
+          <div class="job-logo">TC</div>
+          <div>
+            <h4>Desenvolvedor Python Sr.</h4>
+            <div class="job-company">Tech Corp Brasil</div>
+          </div>
+        </div>
+        <div class="job-tags">
+          <span class="job-tag">Python</span>
+          <span class="job-tag">Django</span>
+          <span class="job-tag">AWS</span>
+        </div>
+        <div class="job-salary">R$ 8.000 – R$ 12.000</div>
+        <div class="job-card-footer">
+          <span class="job-location">📍 São Paulo, SP</span>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Candidatar</button>
+        </div>
+      </div>
+      <div class="job-card fade-in">
+        <div class="job-card-header">
+          <div class="job-logo" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8)">PM</div>
+          <div>
+            <h4>Product Manager</h4>
+            <div class="job-company">StartupX Series A</div>
+          </div>
+        </div>
+        <div class="job-tags">
+          <span class="job-tag">Product</span>
+          <span class="job-tag">Agile</span>
+          <span class="job-tag">Analytics</span>
+        </div>
+        <div class="job-salary">R$ 10.000 – R$ 16.000</div>
+        <div class="job-card-footer">
+          <span class="job-location">📍 Remoto</span>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Candidatar</button>
+        </div>
+      </div>
+      <div class="job-card fade-in">
+        <div class="job-card-header">
+          <div class="job-logo" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">UX</div>
+          <div>
+            <h4>UX/UI Designer</h4>
+            <div class="job-company">FinTech Nordeste</div>
+          </div>
+        </div>
+        <div class="job-tags">
+          <span class="job-tag">Figma</span>
+          <span class="job-tag">UX Research</span>
+          <span class="job-tag">React</span>
+        </div>
+        <div class="job-salary">R$ 6.000 – R$ 9.000</div>
+        <div class="job-card-footer">
+          <span class="job-location">📍 Salvador, BA</span>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Candidatar</button>
+        </div>
+      </div>
+      <div class="job-card fade-in">
+        <div class="job-card-header">
+          <div class="job-logo" style="background:linear-gradient(135deg,#EF4444,#B91C1C)">DS</div>
+          <div>
+            <h4>Data Scientist</h4>
+            <div class="job-company">Petrobras Digital</div>
+          </div>
+        </div>
+        <div class="job-tags">
+          <span class="job-tag">Python</span>
+          <span class="job-tag">ML</span>
+          <span class="job-tag">SQL</span>
+        </div>
+        <div class="job-salary">R$ 12.000 – R$ 18.000</div>
+        <div class="job-card-footer">
+          <span class="job-location">📍 Rio de Janeiro, RJ</span>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Candidatar</button>
+        </div>
+      </div>
+      <div class="job-card fade-in">
+        <div class="job-card-header">
+          <div class="job-logo" style="background:linear-gradient(135deg,#F59E0B,#D97706)">DE</div>
+          <div>
+            <h4>DevOps Engineer</h4>
+            <div class="job-company">CloudBR</div>
+          </div>
+        </div>
+        <div class="job-tags">
+          <span class="job-tag">Docker</span>
+          <span class="job-tag">K8s</span>
+          <span class="job-tag">AWS</span>
+        </div>
+        <div class="job-salary">R$ 9.000 – R$ 14.000</div>
+        <div class="job-card-footer">
+          <span class="job-location">📍 Híbrido — SP</span>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Candidatar</button>
+        </div>
+      </div>
+      <div class="job-card fade-in">
+        <div class="job-card-header">
+          <div class="job-logo" style="background:linear-gradient(135deg,#10B981,#059669)">MK</div>
+          <div>
+            <h4>Growth Hacker</h4>
+            <div class="job-company">EduTech Brasil</div>
+          </div>
+        </div>
+        <div class="job-tags">
+          <span class="job-tag">Marketing</span>
+          <span class="job-tag">SEO</span>
+          <span class="job-tag">Ads</span>
+        </div>
+        <div class="job-salary">R$ 5.000 – R$ 8.000</div>
+        <div class="job-card-footer">
+          <span class="job-location">📍 Remoto</span>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Candidatar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TESTIMONIALS ─── -->
+<section class="testimonials">
+  <div class="container">
+    <div class="section-header text-center" style="margin-bottom:56px">
+      <span class="section-tag">Depoimentos</span>
+      <h2 class="section-title">Quem usa, recomenda</h2>
+      <p class="section-sub" style="margin:0 auto">Candidatos reais, resultados reais.</p>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card fade-in">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Em menos de uma semana com a TRAMPO, recebi 3 chamadas para entrevista. Antes eu ficava horas enviando currículo um por um."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">JM</div>
+          <div>
+            <div class="testi-name">João Mendes</div>
+            <div class="testi-role">Dev Full-Stack · São Paulo, SP</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card fade-in">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"A carta personalizada que a IA escreveu para cada vaga era exatamente o que eu queria dizer. Nunca achei que automatização podia soar tão pessoal."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">ML</div>
+          <div>
+            <div class="testi-name">Maria Lúcia</div>
+            <div class="testi-role">Analista de Dados · Rio de Janeiro, RJ</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card fade-in">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"Usei como recrutadora e contratei 5 pessoas em 2 horas. A triagem automática me salvou um dia inteiro de trabalho."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">CH</div>
+          <div>
+            <div class="testi-name">Carla Henrique</div>
+            <div class="testi-role">Head de RH · CEO TechStartup</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA FINAL ─── -->
+<section style="padding:100px 0;background:var(--green-light)">
+  <div class="container text-center">
+    <span class="section-tag" style="background:white;color:var(--green-dark)">Comece Hoje</span>
+    <h2 class="section-title" style="margin:16px auto;max-width:600px">Pronto para encontrar sua próxima oportunidade?</h2>
+    <p class="section-sub" style="margin:0 auto 40px;max-width:480px">Crie sua conta grátis em 30 segundos. Sem cartão, sem compromisso.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary btn-lg" onclick="openAuthModal('register')">🚀 Criar Conta Grátis</button>
+      <a href="pages/premium.html" class="btn btn-secondary btn-lg">👑 Conhecer Premium</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="nav-logo">TRAMP<span>O</span></span>
+        <p class="footer-desc">A plataforma que conecta candidatos às vagas certas usando Inteligência Artificial e automação. 🚀</p>
+      </div>
+      <div class="footer-col">
+        <h5>Candidatos</h5>
+        <ul class="footer-links">
+          <li><a href="pages/profile.html">Meu Perfil</a></li>
+          <li><a href="pages/dispatch.html">Disparar CV</a></li>
+          <li><a href="pages/routes.html">Calcular Rota</a></li>
+          <li><a href="pages/premium.html">Premium</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Recrutadores</h5>
+        <ul class="footer-links">
+          <li><a href="pages/recruiter.html">Publicar Vaga</a></li>
+          <li><a href="pages/recruiter.html">Ver Candidatos</a></li>
+          <li><a href="pages/recruiter.html">Dashboard</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Suporte</h5>
+        <ul class="footer-links">
+          <li><a href="pages/support.html">Central de Ajuda</a></li>
+          <li><a href="pages/support.html">FAQ</a></li>
+          <li><a href="#">Termos de Uso</a></li>
+          <li><a href="#">Privacidade (LGPD)</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 TRAMPO. Todos os direitos reservados.</span>
+      <div class="footer-socials">
+        <a href="#" class="social-link">💼</a>
+        <a href="#" class="social-link">🐙</a>
+        <a href="#" class="social-link">📸</a>
+        <a href="#" class="social-link">🐦</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── MODAL AUTH ─── -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAuthModal()">✕</button>
+    <div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="login">Entrar</button>
+      <button class="modal-tab" data-tab="register">Criar Conta</button>
+    </div>
+
+    <!-- Login -->
+    <form id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar na TRAMPO</button>
+      <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--gray-500)">
+        Não tem conta? <a href="#" style="color:var(--green);font-weight:700" onclick="setAuthTab('register');return false;">Criar grátis</a>
+      </p>
+    </form>
+
+    <!-- Register -->
+    <form id="registerForm" class="hidden">
+      <div class="form-group">
+        <label class="form-label">Nome Completo</label>
+        <input id="regName" type="text" class="form-input" placeholder="Seu nome completo" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="regEmail" type="email" class="form-input" placeholder="seu@email.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sou um</label>
+        <select id="regRole" class="form-input form-select">
+          <option value="candidate">👤 Candidato — quero uma vaga</option>
+          <option value="recruiter">🏢 Recrutador — quero contratar</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta Grátis 🚀</button>
+      <p style="text-align:center;margin-top:12px;font-size:11px;color:var(--gray-300)">
+        Ao criar conta você aceita nossos <a href="#" style="color:var(--green)">Termos de Uso</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="./js/radio-bar.js"></script>
+</body>
+</html>
