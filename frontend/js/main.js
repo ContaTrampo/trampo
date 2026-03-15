@@ -2,7 +2,12 @@
    TRAMPO - JavaScript Principal
    =========================== */
 
-const API = 'http://localhost:5000/api';
+const API = (() => {
+  const h = location.hostname;
+  return (h === 'localhost' || h === '127.0.0.1' || h === '')
+    ? 'http://localhost:5000/api'
+    : 'https://trampo-api-pnux.cr.render.com/api';
+})();
 
 // ─── AUTH STATE ───────────────────────────────────────────────
 const Auth = {
