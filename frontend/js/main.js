@@ -22,7 +22,7 @@ const Auth = {
   logout: () => {
     localStorage.removeItem('trampo_token');
     localStorage.removeItem('trampo_user');
-    window.location.href = '/frontend/index.html';
+    window.location.href = '/';
   },
   isLoggedIn: () => !!localStorage.getItem('trampo_token'),
   headers: () => ({
@@ -44,9 +44,9 @@ async function http(method, path, body = null) {
     throw err;
   }
 }
-const get = (p) => http('GET', p);
+const get  = (p)    => http('GET',  p);
 const post = (p, b) => http('POST', p, b);
-const put = (p, b) => http('PUT', p, b);
+const put  = (p, b) => http('PUT',  p, b);
 
 // ─── TOAST ────────────────────────────────────────────────────
 function toast(msg, type = 'success') {
@@ -62,7 +62,10 @@ function toast(msg, type = 'success') {
   el.className = `toast ${type !== 'success' ? type : ''}`;
   el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
   container.appendChild(el);
-  setTimeout(() => { el.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, 3500);
+  setTimeout(() => {
+    el.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
 }
 
 // ─── MODAL AUTH ───────────────────────────────────────────────
@@ -80,16 +83,17 @@ function closeAuthModal() {
   document.body.style.overflow = '';
 }
 function setAuthTab(tab) {
-  document.querySelectorAll('.modal-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+  document.querySelectorAll('.modal-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('loginForm').classList.toggle('hidden',    tab !== 'login');
   document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
 }
 
 // ─── LOGIN ────────────────────────────────────────────────────
 async function handleLogin(e) {
   e.preventDefault();
-  const btn = e.target.querySelector('button[type=submit]');
-  const email = document.getElementById('loginEmail').value;
+  const btn      = e.target.querySelector('button[type=submit]');
+  const email    = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
   setLoading(btn, true);
   try {
@@ -99,8 +103,9 @@ async function handleLogin(e) {
     updateNavUI();
     toast(`Bem-vindo de volta, ${data.user.name.split(' ')[0]}! 🚀`);
     setTimeout(() => {
-      if (data.user.role === 'recruiter') window.location.href = 'pages/recruiter.html';
-    }, 500);
+      if (data.user.role === 'recruiter') window.location.href = '/pages/recruiter.html';
+      else window.location.href = '/pages/profile.html';
+    }, 600);
   } catch (err) {
     toast(err.message, 'error');
   } finally {
@@ -111,23 +116,28 @@ async function handleLogin(e) {
 // ─── REGISTER ─────────────────────────────────────────────────
 async function handleRegister(e) {
   e.preventDefault();
-  const btn = e.target.querySelector('button[type=submit]');
-  const name = document.getElementById('regName').value;
-  const email = document.getElementById('regEmail').value;
+  const btn      = e.target.querySelector('button[type=submit]');
+  const name     = document.getElementById('regName').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
-  const role = document.getElementById('regRole').value;
-  if (password.length < 6) { toast('Senha precisa ter 6+ caracteres', 'error'); return; }
+  const role     = document.getElementById('regRole').value;
+
+  if (password.length < 6) {
+    toast('Senha precisa ter pelo menos 6 caracteres', 'error');
+    return;
+  }
+
   setLoading(btn, true);
   try {
     const data = await post('/auth/register', { name, email, password, role });
     Auth.save(data.token, data.user);
     closeAuthModal();
     updateNavUI();
-    toast(`Bem-vindo ao TRAMPO, ${name.split(' ')[0]}! 🎉`);
+    toast(`Conta criada! Verifique seu email, ${name.split(' ')[0]}! ✉️`, 'success');
     setTimeout(() => {
-      if (role === 'candidate') window.location.href = 'pages/profile.html';
-      else window.location.href = 'pages/recruiter.html';
-    }, 800);
+      if (role === 'recruiter') window.location.href = '/pages/recruiter.html';
+      else window.location.href = '/pages/profile.html';
+    }, 1200);
   } catch (err) {
     toast(err.message, 'error');
   } finally {
@@ -137,7 +147,7 @@ async function handleRegister(e) {
 
 // ─── NAV UI ───────────────────────────────────────────────────
 function updateNavUI() {
-  const user = Auth.getUser();
+  const user    = Auth.getUser();
   const navAuth = document.getElementById('navAuth');
   const navUser = document.getElementById('navUser');
   if (!navAuth || !navUser) return;
@@ -145,11 +155,17 @@ function updateNavUI() {
     navAuth.classList.add('hidden');
     navUser.classList.remove('hidden');
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    document.getElementById('navAvatar').textContent = initials;
-    document.getElementById('navName').textContent = user.name.split(' ')[0];
+    const avatar   = document.getElementById('navAvatar');
+    const nameEl   = document.getElementById('navName');
+    if (avatar) avatar.textContent = initials;
+    if (nameEl)  nameEl.textContent = user.name.split(' ')[0];
     if (user.is_premium) {
       const badge = document.getElementById('navBadge');
-      if (badge) { badge.textContent = '💎 Premium'; badge.className = 'badge badge-premium'; badge.classList.remove('hidden'); }
+      if (badge) {
+        badge.textContent = '💎 Premium';
+        badge.className   = 'badge badge-premium';
+        badge.classList.remove('hidden');
+      }
     }
   } else {
     navAuth.classList.remove('hidden');
@@ -161,12 +177,12 @@ function updateNavUI() {
 function setLoading(btn, loading) {
   if (!btn) return;
   if (loading) {
-    btn._text = btn.innerHTML;
+    btn._text    = btn.innerHTML;
     btn.innerHTML = '<div class="spinner"></div> Aguarde...';
-    btn.disabled = true;
+    btn.disabled  = true;
   } else {
     btn.innerHTML = btn._text || 'Confirmar';
-    btn.disabled = false;
+    btn.disabled  = false;
   }
 }
 
@@ -189,7 +205,7 @@ function initHeaderScroll() {
 
 // ─── HAMBURGER MENU ───────────────────────────────────────────
 function initHamburger() {
-  const ham = document.getElementById('hamburger');
+  const ham      = document.getElementById('hamburger');
   const navLinks = document.querySelector('.nav-links');
   if (!ham || !navLinks) return;
   ham.addEventListener('click', () => navLinks.classList.toggle('open'));
@@ -197,10 +213,10 @@ function initHamburger() {
 
 // ─── COUNTER ANIMATION ────────────────────────────────────────
 function animateCounter(el, target, duration = 2000) {
-  const start = performance.now();
+  const start  = performance.now();
   const update = (time) => {
     const progress = Math.min((time - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
+    const eased    = 1 - Math.pow(1 - progress, 3);
     el.textContent = Math.floor(eased * target).toLocaleString('pt-BR');
     if (progress < 1) requestAnimationFrame(update);
     else el.textContent = target.toLocaleString('pt-BR');
@@ -212,8 +228,7 @@ function initCounters() {
     entries.forEach(e => {
       if (e.isIntersecting && !e.target.dataset.counted) {
         e.target.dataset.counted = true;
-        const target = parseInt(e.target.dataset.target);
-        animateCounter(e.target, target);
+        animateCounter(e.target, parseInt(e.target.dataset.target));
       }
     });
   }, { threshold: 0.5 });
@@ -243,17 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initCounters();
   initDarkMode();
 
-  // Fecha modal ao clicar fora
   document.getElementById('authModal')?.addEventListener('click', e => {
     if (e.target.id === 'authModal') closeAuthModal();
   });
 
-  // Tabs do modal
   document.querySelectorAll('.modal-tab').forEach(tab => {
     tab.addEventListener('click', () => setAuthTab(tab.dataset.tab));
   });
 
-  // Forms
   document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
   document.getElementById('registerForm')?.addEventListener('submit', handleRegister);
 });
