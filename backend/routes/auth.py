@@ -1,4 +1,5 @@
-"""TRAMPO v7 — Autenticação completa"""
+"""TRAMPO v8 — Autenticação completa"""
+import re
 import secrets
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
@@ -12,6 +13,33 @@ from services.email_service import send_verification_email, send_welcome_email, 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
+@auth_bp.route("/test-email", methods=["GET"])
+def test_email():
+    """Diagnóstico de email — acesse /api/auth/test-email no navegador"""
+    from flask import current_app
+    username = current_app.config.get("MAIL_USERNAME", "")
+    password = current_app.config.get("MAIL_PASSWORD", "")
+    if not username or not password:
+        return jsonify({
+            "erro": "Variáveis MAIL_USERNAME ou MAIL_PASSWORD não configuradas no Render",
+            "MAIL_USERNAME": username or "VAZIO",
+            "MAIL_PASSWORD": "VAZIO" if not password else "OK (configurada)"
+        }), 500
+    from services.email_service import _send
+    ok = _send(
+        to=username,
+        subject="✅ Teste TRAMPO — Email funcionando!",
+        html="<h1 style='color:#10b981'>TRAMPO</h1><p>Email configurado corretamente!</p>"
+    )
+    if ok:
+        return jsonify({"enviado": True, "para": username}), 200
+    else:
+        return jsonify({
+            "enviado": False,
+            "dica": "Verifique os logs do Render para ver o erro exato"
+        }), 500
+
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data     = request.get_json() or {}
@@ -21,10 +49,6 @@ def register():
     role     = data.get("role", "candidate")
     cpf_raw  = re.sub(r"\D", "", data.get("cpf") or "") if data.get("cpf") else None
 
-    # Importar re localmente
-    import re
-
-    # Validações básicas
     if not name or not email or not password:
         return jsonify({"error": "Nome, email e senha são obrigatórios"}), 400
     if not validate_email(email):
@@ -46,7 +70,6 @@ def register():
     if role not in ("candidate", "recruiter"):
         role = "candidate"
 
-    # Gera token de verificação
     token   = secrets.token_urlsafe(32)
     expires = datetime.now(timezone.utc) + timedelta(hours=24)
 
@@ -121,9 +144,9 @@ def verify_email():
         if exp < datetime.now(timezone.utc):
             return jsonify({"error": "Link expirado. Solicite um novo."}), 410
 
-    user.email_verified = True
-    user.email_verification_token   = None
-    user.email_verification_expires = None
+    user.email_verified               = True
+    user.email_verification_token     = None
+    user.email_verification_expires   = None
     db.session.commit()
 
     try:
@@ -186,7 +209,6 @@ def forgot_password():
         return jsonify({"error": "Email é obrigatório"}), 400
 
     user = User.query.filter_by(email=email).first()
-    # Sempre retorna 200 para não revelar se email existe
     if user:
         token   = secrets.token_urlsafe(32)
         expires = datetime.now(timezone.utc) + timedelta(hours=2)
