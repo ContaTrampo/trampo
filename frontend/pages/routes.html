@@ -1,227 +1,417 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calcular Rotas — TRAMPO</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rotas — TRAMPO</title>
   <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    #map { height: 480px; border-radius: 16px; border: 1.5px solid var(--gray-100); z-index: 1; }
+    .transport-btn { display:flex; align-items:center; gap:8px; padding:12px 16px; border:2px solid var(--gray-100); border-radius:12px; background:white; cursor:pointer; transition:all .2s; font-weight:600; font-size:14px; color:var(--gray-700); }
+    .transport-btn:hover, .transport-btn.active { border-color:var(--green); background:var(--green-light); color:var(--green-dark); }
+    .transport-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+    .result-card { background:var(--green-light); border:1.5px solid rgba(0,200,83,.25); border-radius:14px; padding:20px; margin-bottom:16px; }
+    .result-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(0,200,83,.1); font-size:14px; }
+    .result-row:last-child { border:none; }
+    .result-label { color:var(--gray-500); }
+    .result-value { font-weight:700; color:var(--navy); }
+    .step-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px dashed var(--gray-100); }
+    .step-item:last-child { border:none; }
+    .step-num { width:24px; height:24px; border-radius:50%; background:var(--green); color:white; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+    .step-text { font-size:13px; color:var(--gray-700); line-height:1.5; }
+    .app-btn { display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:14px; color:white; font-weight:700; font-size:14px; text-decoration:none; transition:opacity .2s; cursor:pointer; border:none; width:100%; }
+    .app-btn:hover { opacity:.85; }
+  </style>
 </head>
 <body>
+
 <header class="header">
   <nav class="nav container">
     <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
     <ul class="nav-links" id="navLinks">
-      <li><a href="../index.html">Início</a></li><li><a href="dispatch.html">Disparar CV</a></li>
-      <li><a href="profile.html">Meu Perfil</a></li><li><a href="routes.html" class="active">Rotas</a></li>
-      <li><a href="premium.html">Premium 👑</a></li><li><a href="support.html">Suporte</a></li>
+      <li><a href="../index.html">Início</a></li>
+      <li><a href="dispatch.html">Disparar CV</a></li>
+      <li><a href="profile.html">Meu Perfil</a></li>
+      <li><a href="routes.html" class="active">Rotas</a></li>
+      <li><a href="premium.html">Premium 👑</a></li>
+      <li><a href="support.html">Suporte</a></li>
     </ul>
-    <div class="nav-auth" id="navAuth"><button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button><button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button></div>
-    <div class="nav-user hidden" id="navUser"><span class="badge badge-free hidden" id="navBadge">Free</span><span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span><div class="avatar" id="navAvatar">?</div><button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button></div>
+    <div class="nav-auth" id="navAuth">
+      <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button>
+    </div>
+    <div class="nav-user hidden" id="navUser">
+      <span class="badge badge-free hidden" id="navBadge">Free</span>
+      <span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span>
+      <div class="avatar" id="navAvatar">?</div>
+      <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button>
+    </div>
     <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
   </nav>
 </header>
-<div class="page-header"><div class="container"><h1>🗺️ Planejador de Rotas</h1><p>Calcule tempo e custo para chegar à sua entrevista.</p></div></div>
-<div class="container" style="padding:40px 0 80px">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start">
-    <!-- FORM -->
-    <div>
-      <div class="card" style="margin-bottom:24px">
-        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">📍 Calcular Rota</h3>
-        <div class="form-group"><label class="form-label">Minha localização atual</label><input id="origin" class="form-input" placeholder="Ex: Av. Paulista, 1000, São Paulo, SP"></div>
-        <div class="form-group"><label class="form-label">Destino (empresa / entrevista)</label><input id="destination" class="form-input" placeholder="Ex: Faria Lima, 2000, São Paulo, SP"></div>
-        <div class="form-group"><label class="form-label">Horário de chegada desejado</label><input id="arrivalTime" type="time" class="form-input" value="09:00"></div>
-        <button class="btn btn-primary btn-lg btn-block" onclick="calcRoute()" id="calcBtn">🗺️ Calcular Todas as Rotas</button>
-      </div>
-      <!-- RESULTADOS -->
-      <div id="resultsSection" class="hidden">
-        <div style="background:var(--green-light);border-radius:var(--radius);padding:20px;margin-bottom:20px;border:1.5px solid rgba(0,200,83,0.2)">
-          <div style="font-size:13px;font-weight:700;color:var(--green-dark);margin-bottom:8px">✅ ROTAS CALCULADAS</div>
-          <div style="display:flex;gap:24px;flex-wrap:wrap">
-            <div><div style="font-size:12px;color:var(--gray-500)">Distância</div><div style="font-size:18px;font-weight:700;color:var(--navy)" id="rDistance">—</div></div>
-            <div><div style="font-size:12px;color:var(--gray-500)">Origem</div><div style="font-size:14px;font-weight:600;color:var(--navy)" id="rOrigin">—</div></div>
-            <div><div style="font-size:12px;color:var(--gray-500)">Destino</div><div style="font-size:14px;font-weight:600;color:var(--navy)" id="rDest">—</div></div>
-          </div>
-        </div>
-        <div class="route-tabs">
-          <button class="route-tab active" onclick="showTab('public',this)">🚇 Transporte</button>
-          <button class="route-tab" onclick="showTab('uber',this)">🚕 Uber</button>
-          <button class="route-tab" onclick="showTab('bike',this)">🚴 Bike</button>
-          <button class="route-tab" onclick="showTab('compare',this)">📊 Comparar</button>
-        </div>
-        <!-- TRANSPORTE PÚBLICO -->
-        <div class="route-result active" id="tab-public">
-          <div class="route-info">
-            <div class="route-metric"><div class="label">Tempo estimado</div><div class="value" id="pt-time">—</div></div>
-            <div class="route-metric"><div class="label">Custo estimado</div><div class="value" id="pt-cost">—</div></div>
-            <div class="route-metric"><div class="label">Sair às</div><div class="value" id="pt-depart">—</div></div>
-          </div>
-          <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
-            <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px">📋 Rota sugerida</div>
-            <p style="font-size:13px;color:var(--gray-600)">Metrô (próxima estação) → Conexão/Ônibus → A pé até o destino</p>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <a href="https://maps.google.com" target="_blank" class="btn btn-secondary btn-sm">Google Maps</a>
-            <a href="https://moovit.com" target="_blank" class="btn btn-secondary btn-sm">Moovit</a>
-          </div>
-        </div>
-        <!-- UBER -->
-        <div class="route-result" id="tab-uber">
-          <div class="route-info">
-            <div class="route-metric"><div class="label">Tempo estimado</div><div class="value" id="ub-time">—</div></div>
-            <div class="route-metric"><div class="label">Sair às</div><div class="value" id="ub-depart">—</div></div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--green-light);border-radius:var(--radius-sm);border:1.5px solid rgba(0,200,83,0.2)">
-              <span style="font-weight:700;color:var(--navy)">🚗 Uber Pop <span style="font-size:11px;background:var(--green);color:white;padding:2px 8px;border-radius:100px;margin-left:6px">Recomendado</span></span>
-              <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green-dark)" id="ub-pop">—</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--gray-50);border-radius:var(--radius-sm)">
-              <span style="font-weight:600;color:var(--navy)">🚗 Uber X</span>
-              <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--gray-700)" id="ub-x">—</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--gray-50);border-radius:var(--radius-sm)">
-              <span style="font-weight:600;color:var(--navy)">🚌 Uber XL</span>
-              <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--gray-700)" id="ub-xl">—</span>
-            </div>
-          </div>
-          <a href="uber://" class="btn btn-primary btn-sm">Abrir Uber App</a>
-        </div>
-        <!-- BIKE -->
-        <div class="route-result" id="tab-bike">
-          <div class="route-info">
-            <div class="route-metric"><div class="label">Tempo estimado</div><div class="value" id="bk-time">—</div></div>
-            <div class="route-metric"><div class="label">Custo estimado</div><div class="value" id="bk-cost">—</div></div>
-            <div class="route-metric"><div class="label">Sair às</div><div class="value" id="bk-depart">—</div></div>
-          </div>
-          <div style="background:var(--green-light);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;color:var(--gray-700)">
-            🌱 Opção mais saudável e sustentável! Recomendada para distâncias até 8km.
-          </div>
-          <div style="display:flex;gap:8px"><a href="#" class="btn btn-secondary btn-sm">Tembici</a><a href="#" class="btn btn-secondary btn-sm">Bike Itaú</a></div>
-        </div>
-        <!-- COMPARATIVO -->
-        <div class="route-result" id="tab-compare">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Opção</th><th>Tempo</th><th>Custo</th><th>Sair às</th><th>Nota</th></tr></thead>
-              <tbody id="compareBody"></tbody>
-            </table>
-          </div>
-          <div style="margin-top:20px;padding:16px;background:var(--gray-50);border-radius:var(--radius-sm)">
-            <div style="font-weight:700;color:var(--navy);margin-bottom:8px">💡 Dicas</div>
-            <ul style="font-size:13px;color:var(--gray-600);list-style:none;display:flex;flex-direction:column;gap:6px">
-              <li>• Saia 15 minutos mais cedo que o necessário para imprevistos</li>
-              <li>• Uber Pop costuma ser 20% mais barato nos horários de pico</li>
-              <li>• Guarde o comprovante do transporte — é dedutível como despesa</li>
-              <li>• Chegando 10-15 min antes cria excelente primeira impressão</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- MAPA PLACEHOLDER -->
-    <div style="position:sticky;top:96px">
-      <div class="map-container" id="mapContainer">
-        <div class="map-placeholder" id="mapPlaceholder">
-          <div style="font-size:64px;margin-bottom:16px">🗺️</div>
-          <h3 style="color:var(--navy);margin-bottom:8px">Mapa Interativo</h3>
-          <p style="font-size:14px">Preencha origem e destino para visualizar a rota no mapa.</p>
-          <p style="font-size:12px;margin-top:8px;color:var(--gray-300)">Necessário Google Maps API Key</p>
-        </div>
-        <div id="map" style="width:100%;height:100%;min-height:400px;display:none"></div>
-      </div>
-      <div class="card" style="margin-top:20px">
-        <h4 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:12px">📌 Rotas Salvas</h4>
-        <div id="savedRoutes"><p style="font-size:13px;color:var(--gray-500)">Nenhuma rota salva ainda.</p></div>
-        <button class="btn btn-secondary btn-sm btn-block" style="margin-top:12px" id="saveRouteBtn" onclick="saveRoute()" disabled>💾 Salvar Rota Atual</button>
-      </div>
-    </div>
+
+<div class="page-header">
+  <div class="container">
+    <h1>🗺️ Calculadora de Rotas</h1>
+    <p>Tempo, custo e como chegar à sua entrevista — mapa real, 100% gratuito</p>
   </div>
 </div>
+
+<div class="container" style="padding:40px 0 100px">
+  <div style="display:grid;grid-template-columns:400px 1fr;gap:32px;align-items:start">
+
+    <!-- PAINEL ESQUERDO -->
+    <div>
+      <div class="card" style="margin-bottom:20px">
+        <h3 style="font-size:17px;font-weight:700;color:var(--navy);margin-bottom:20px">📍 Planejar rota</h3>
+
+        <div class="form-group">
+          <label class="form-label">Sua localização</label>
+          <input id="origin" class="form-input" placeholder="Ex: Pelourinho, Salvador, BA">
+          <button class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%" onclick="getMyLocation()">
+            📱 Usar minha localização atual
+          </button>
+        </div>
+
+        <div style="display:flex;justify-content:center;margin:8px 0">
+          <button onclick="swapLocations()" style="background:var(--gray-100);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer" title="Inverter">⇅</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Destino (empresa / entrevista)</label>
+          <input id="destination" class="form-input" placeholder="Ex: Av. Tancredo Neves, 1632, Salvador">
+        </div>
+
+        <div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:var(--gray-700)">Modo de transporte</div>
+        <div class="transport-grid">
+          <button class="transport-btn active" id="btn-car"  onclick="selectMode('car',this)">🚗 Carro</button>
+          <button class="transport-btn"        id="btn-bike" onclick="selectMode('bike',this)">🚲 Bicicleta</button>
+          <button class="transport-btn"        id="btn-foot" onclick="selectMode('foot',this)">🚶 A pé</button>
+          <button class="transport-btn"        id="btn-bus"  onclick="selectMode('bus',this)">🚌 Ônibus*</button>
+        </div>
+        <p style="font-size:11px;color:var(--gray-500);margin-bottom:16px">*Ônibus usa tempo de carro + paradas estimadas</p>
+
+        <button class="btn btn-primary btn-lg btn-block" onclick="calcRoute()" id="calcBtn">
+          🗺️ Calcular Rota
+        </button>
+      </div>
+
+      <!-- RESULTADO -->
+      <div id="resultBox" class="hidden">
+        <div class="result-card">
+          <div style="font-size:13px;font-weight:700;color:var(--green-dark);margin-bottom:12px" id="result-title">✅ Rota calculada</div>
+          <div class="result-row"><span class="result-label">⏱️ Tempo estimado</span><span class="result-value" id="r-time">—</span></div>
+          <div class="result-row"><span class="result-label">📏 Distância</span><span class="result-value" id="r-dist">—</span></div>
+          <div class="result-row"><span class="result-label">💰 Custo estimado</span><span class="result-value" id="r-cost">—</span></div>
+          <div class="result-row"><span class="result-label">🕐 Sair às</span><span class="result-value" id="r-depart">—</span></div>
+        </div>
+
+        <!-- BOTÕES UBER / 99 / ÔNIBUS -->
+        <div id="ride-buttons" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px"></div>
+
+        <!-- APPS DE ÔNIBUS POR CIDADE -->
+        <div id="bus-apps" class="hidden card" style="padding:14px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:10px">🚌 Apps de ônibus na sua cidade</div>
+          <div id="bus-apps-list"></div>
+        </div>
+
+        <div class="card">
+          <h4 style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px">📋 Passo a passo</h4>
+          <div id="steps-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAPA -->
+    <div>
+      <div id="map"></div>
+      <div style="margin-top:12px;font-size:12px;color:var(--gray-500);text-align:center">
+        Mapa: © <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color:var(--green)">OpenStreetMap</a> ·
+        Rotas: <a href="https://project-osrm.org" target="_blank" style="color:var(--green)">OSRM</a> · 100% gratuito
+      </div>
+
+      <!-- Dicas fixas -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:20px">
+        <div class="card" style="padding:16px;text-align:center">
+          <div style="font-size:28px;margin-bottom:6px">🚌</div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">Ônibus Salvador</div>
+          <div style="font-size:11px;color:var(--gray-500)">Tarifa única R$ 4,50. App: Busão Salvador.</div>
+        </div>
+        <div class="card" style="padding:16px;text-align:center">
+          <div style="font-size:28px;margin-bottom:6px">🚗</div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">Uber / 99Pop</div>
+          <div style="font-size:11px;color:var(--gray-500)">~R$ 2,50/km Uber · ~R$ 1,80/km 99Pop.</div>
+        </div>
+        <div class="card" style="padding:16px;text-align:center">
+          <div style="font-size:28px;margin-bottom:6px">💡</div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px">Dica TRAMPO</div>
+          <div style="font-size:11px;color:var(--gray-500)">Saia 15 min antes. Pico: 7–9h e 17–19h.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- MODAL AUTH -->
-<div class="modal-overlay" id="authModal"><div class="modal"><button class="modal-close" onclick="closeAuthModal()">✕</button><div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div><div class="modal-tabs"><button class="modal-tab active" data-tab="login">Entrar</button><button class="modal-tab" data-tab="register">Criar Conta</button></div><form id="loginForm"><div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div><button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button></form><form id="registerForm" class="hidden"><div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" placeholder="Seu nome" required></div><div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" placeholder="seu@email.com" required></div><div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div><div class="form-group"><label class="form-label">Sou um</label><select id="regRole" class="form-input form-select"><option value="candidate">👤 Candidato</option><option value="recruiter">🏢 Recrutador</option></select></div><button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button></form></div></div>
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAuthModal()">✕</button>
+    <div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="login">Entrar</button>
+      <button class="modal-tab" data-tab="register">Criar Conta</button>
+    </div>
+    <form id="loginForm">
+      <div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div>
+      <div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button>
+    </form>
+    <form id="registerForm" class="hidden">
+      <div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" required></div>
+      <div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" required></div>
+      <div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div>
+      <div class="form-group"><label class="form-label">Sou um</label>
+        <select id="regRole" class="form-input form-select">
+          <option value="candidate">👤 Candidato</option>
+          <option value="recruiter">🏢 Recrutador</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../js/main.js"></script>
 <script>
-let lastResult = null;
-function showTab(name, btn) {
-  document.querySelectorAll('.route-result').forEach(r=>r.classList.remove('active'));
-  document.querySelectorAll('.route-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
+/* ── Mapa ─────────────────────────────────────────────────── */
+const map = L.map('map').setView([-12.9714, -38.5014], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors', maxZoom: 19,
+}).addTo(map);
+
+let routeLayer = null, markerA = null, markerB = null;
+let currentMode = 'car';
+let lastFrom = null, lastTo = null, lastDistKm = 0;
+
+const iconA = L.divIcon({ html:'<div style="background:#00C853;color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)">A</div>', iconSize:[32,32], iconAnchor:[16,16], className:'' });
+const iconB = L.divIcon({ html:'<div style="background:#EF4444;color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)">B</div>', iconSize:[32,32], iconAnchor:[16,16], className:'' });
+
+/* ── Geocodificação ──────────────────────────────────────── */
+async function geocode(address) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=br`;
+  const r = await fetch(url, { headers: { 'User-Agent': 'TRAMPO-App/1.0' } });
+  const data = await r.json();
+  if (!data.length) throw new Error(`Endereço não encontrado: "${address}"`);
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+}
+
+/* ── Rota OSRM ───────────────────────────────────────────── */
+async function getRoute(from, to, profile) {
+  const profileMap = { car:'driving', bike:'cycling', foot:'foot', bus:'driving' };
+  const p = profileMap[profile] || 'driving';
+  const url = `https://router.project-osrm.org/route/v1/${p}/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&steps=true`;
+  const r = await fetch(url);
+  const data = await r.json();
+  if (data.code !== 'Ok') throw new Error('Rota não encontrada');
+  return data.routes[0];
+}
+
+/* ── Apps de ônibus por cidade ───────────────────────────── */
+const BUS_APPS = {
+  'salvador': [
+    { name: 'Busão Salvador', icon: '🚌', url: 'https://play.google.com/store/apps/details?id=br.com.busSalvador', desc: 'Rastrear ônibus em tempo real' },
+    { name: 'Moovit',         icon: '🗺️', url: 'https://moovitapp.com', desc: 'Rotas de transporte público' },
+  ],
+  'são paulo': [
+    { name: 'SPTrans',  icon: '🚌', url: 'https://www.sptrans.com.br/aplicativos/', desc: 'App oficial SPTrans' },
+    { name: 'Moovit',  icon: '🗺️', url: 'https://moovitapp.com', desc: 'Rotas SP' },
+  ],
+  'rio de janeiro': [
+    { name: 'Moovit',    icon: '🗺️', url: 'https://moovitapp.com', desc: 'Rotas RJ' },
+    { name: 'App RioBus',icon: '🚌', url: 'https://play.google.com/store/apps/details?id=com.riobusapp.android', desc: 'Ônibus do RJ' },
+  ],
+  'belo horizonte': [
+    { name: 'BHBus',  icon: '🚌', url: 'https://bhbus.com.br', desc: 'App BH Transporte' },
+    { name: 'Moovit', icon: '🗺️', url: 'https://moovitapp.com', desc: 'Rotas BH' },
+  ],
+  'default': [
+    { name: 'Moovit',    icon: '🗺️', url: 'https://moovitapp.com', desc: 'Transporte público em todo Brasil' },
+    { name: 'Google Maps', icon: '📍', url: 'https://maps.google.com', desc: 'Rotas de ônibus' },
+  ],
+};
+
+function detectCity(displayName) {
+  const lower = (displayName || '').toLowerCase();
+  for (const city of Object.keys(BUS_APPS)) {
+    if (city !== 'default' && lower.includes(city)) return city;
+  }
+  return 'default';
+}
+
+function renderBusApps(city) {
+  const apps = BUS_APPS[city] || BUS_APPS['default'];
+  const list = document.getElementById('bus-apps-list');
+  list.innerHTML = apps.map(a => `
+    <a href="${a.url}" target="_blank"
+       style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-100);text-decoration:none;color:var(--navy)">
+      <span style="font-size:20px">${a.icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:700">${a.name}</div>
+        <div style="font-size:11px;color:var(--gray-500)">${a.desc}</div>
+      </div>
+      <span style="margin-left:auto;font-size:12px;color:var(--green);font-weight:700">Abrir →</span>
+    </a>
+  `).join('');
+  document.getElementById('bus-apps').classList.remove('hidden');
+}
+
+/* ── Botões Uber / 99 ────────────────────────────────────── */
+function renderRideButtons(distKm, fromLat, fromLon, toLat, toLon, originTxt, destTxt) {
+  const uberPop = Math.round(distKm * 2.5 + 5);
+  const uberX   = Math.round(distKm * 3.2 + 5);
+  const pop99   = Math.round(distKm * 1.8 + 4);
+
+  // Deep links — abrem o app se instalado, senão abre o site
+  const uberLink = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${fromLat}&pickup[longitude]=${fromLon}&dropoff[latitude]=${toLat}&dropoff[longitude]=${toLon}&dropoff[nickname]=${encodeURIComponent(destTxt)}`;
+  const link99   = `https://99app.com/corrida?origin=${encodeURIComponent(originTxt)}&destination=${encodeURIComponent(destTxt)}`;
+
+  document.getElementById('ride-buttons').innerHTML = `
+    <a href="${uberLink}" target="_blank" class="app-btn" style="background:#000">
+      <span style="font-size:22px">🚗</span>
+      <div>
+        <div>Chamar Uber</div>
+        <div style="font-size:11px;font-weight:400;opacity:.7">Pop ~R$${uberPop} · X ~R$${uberX}</div>
+      </div>
+    </a>
+    <a href="${link99}" target="_blank" class="app-btn" style="background:#F5A623">
+      <span style="font-size:22px">🟡</span>
+      <div>
+        <div style="color:#000">Chamar 99</div>
+        <div style="font-size:11px;font-weight:400;color:#000;opacity:.7">Pop ~R$${pop99}</div>
+      </div>
+    </a>
+  `;
+}
+
+/* ── Controles ───────────────────────────────────────────── */
+function selectMode(mode, btn) {
+  currentMode = mode;
+  document.querySelectorAll('.transport-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
+
+function getMyLocation() {
+  if (!navigator.geolocation) { toast('Geolocalização não suportada', 'error'); return; }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const { latitude: lat, longitude: lon } = pos.coords;
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, { headers: { 'User-Agent': 'TRAMPO-App/1.0' } });
+      const d = await r.json();
+      document.getElementById('origin').value = d.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      toast('Localização obtida! ✅');
+    } catch {
+      document.getElementById('origin').value = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    }
+  }, () => toast('Não foi possível obter localização', 'error'));
+}
+
+function swapLocations() {
+  const o = document.getElementById('origin');
+  const d = document.getElementById('destination');
+  [o.value, d.value] = [d.value, o.value];
+}
+
+/* ── Calcular rota ───────────────────────────────────────── */
 async function calcRoute() {
-  const origin = document.getElementById('origin').value.trim();
-  const dest = document.getElementById('destination').value.trim();
-  if (!origin || !dest) { toast('Preencha origem e destino','error'); return; }
+  const originTxt = document.getElementById('origin').value.trim();
+  const destTxt   = document.getElementById('destination').value.trim();
+  if (!originTxt || !destTxt) { toast('Preencha origem e destino', 'error'); return; }
+
   const btn = document.getElementById('calcBtn');
   setLoading(btn, true);
+
   try {
-    let data;
-    try { data = await post('/routes/calculate', { origin, destination: dest }); }
-    catch { data = mockCalc(origin, dest); }
-    lastResult = data;
-    renderRoutes(data, origin, dest);
-    document.getElementById('saveRouteBtn').disabled = false;
-  } catch(e) { toast(e.message,'error'); }
-  finally { setLoading(btn, false); }
+    toast('Buscando endereços...', 'info');
+    const [from, to] = await Promise.all([ geocode(originTxt), geocode(destTxt) ]);
+    lastFrom = from; lastTo = to;
+
+    toast('Calculando rota...', 'info');
+    const route = await getRoute(from, to, currentMode);
+
+    const distKm  = parseFloat((route.distance / 1000).toFixed(1));
+    lastDistKm    = distKm;
+    const baseMin = Math.round(route.duration / 60);
+    const timeMap = { car: baseMin, bike: Math.round(baseMin*1.2), foot: Math.round(baseMin*1.1), bus: Math.round(baseMin*1.8) };
+    const timeMin = timeMap[currentMode] || baseMin;
+    const timeStr = timeMin >= 60 ? `${Math.floor(timeMin/60)}h ${timeMin%60}min` : `${timeMin} min`;
+
+    const costMap = {
+      car:  `~R$ ${(distKm * 0.7).toFixed(2).replace('.',',')} (combustível)`,
+      bike: 'Gratuito 🆓',
+      foot: 'Gratuito 🆓',
+      bus:  'R$ 4,50 (Salvador) · R$ 4,40 (SP) · R$ 3,70 (RJ)',
+    };
+
+    const arrivalH = 9, arrivalM = 0;
+    const departTotal = arrivalH*60 + arrivalM - timeMin - 15;
+    const dH = Math.floor(((departTotal%1440)+1440)%1440/60);
+    const dM = ((departTotal%1440)+1440)%1440%60;
+    const departStr = `${String(dH).padStart(2,'0')}:${String(dM).padStart(2,'0')} (para chegar às 09:00)`;
+
+    const modeNames = { car:'🚗 Carro', bike:'🚲 Bicicleta', foot:'🚶 A pé', bus:'🚌 Ônibus (estimado)' };
+    document.getElementById('result-title').textContent = `✅ Rota por ${modeNames[currentMode]}`;
+    document.getElementById('r-time').textContent  = timeStr;
+    document.getElementById('r-dist').textContent  = distKm + ' km';
+    document.getElementById('r-cost').textContent  = costMap[currentMode];
+    document.getElementById('r-depart').textContent = departStr;
+    document.getElementById('resultBox').classList.remove('hidden');
+
+    /* Botões Uber / 99 */
+    renderRideButtons(distKm, from.lat, from.lon, to.lat, to.lon, originTxt, destTxt);
+
+    /* Apps de ônibus por cidade */
+    const city = detectCity(from.display);
+    renderBusApps(city);
+
+    /* Passo a passo */
+    const steps = route.legs[0]?.steps || [];
+    document.getElementById('steps-list').innerHTML = steps.length
+      ? steps.slice(0,10).map((s,i) => `
+          <div class="step-item">
+            <div class="step-num">${i+1}</div>
+            <div class="step-text">
+              ${s.maneuver?.instruction || s.name || 'Continuar'}
+              <span style="color:var(--gray-300);font-size:11px"> · ${(s.distance/1000).toFixed(1)} km</span>
+            </div>
+          </div>`).join('')
+      : `<div class="step-item"><div class="step-num">1</div><div class="step-text">De ${originTxt.slice(0,40)} até ${destTxt.slice(0,40)}</div></div>`;
+
+    /* Mapa */
+    if (routeLayer) map.removeLayer(routeLayer);
+    if (markerA)    map.removeLayer(markerA);
+    if (markerB)    map.removeLayer(markerB);
+
+    routeLayer = L.geoJSON(route.geometry, { style:{ color:'#00C853', weight:5, opacity:.8 } }).addTo(map);
+    markerA = L.marker([from.lat, from.lon], { icon:iconA }).addTo(map).bindPopup(`<b>Origem</b><br>${from.display.slice(0,60)}...`);
+    markerB = L.marker([to.lat,   to.lon  ], { icon:iconB }).addTo(map).bindPopup(`<b>Destino</b><br>${to.display.slice(0,60)}...`);
+    map.fitBounds(routeLayer.getBounds(), { padding:[40,40] });
+
+    toast(`Rota calculada! ${timeStr} · ${distKm} km ✅`);
+
+  } catch(e) {
+    toast(e.message || 'Erro ao calcular rota', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
 }
-function mockCalc(origin, dest) {
-  const dist = 12.5;
-  return {
-    distance_km: dist,
-    public_transport: { time_minutes: 45, cost_brl: 8.50 },
-    uber: { time_minutes: 25, costs: { uber_pop: 38, uber_x: 48, uber_xl: 62 } },
-    bike: { time_minutes: 40, cost_brl: 15 }
-  };
-}
-function calcDepart(arrival, travelMin, bufferMin=15) {
-  if (!arrival) return '—';
-  const [h,m] = arrival.split(':').map(Number);
-  const total = h*60+m - travelMin - bufferMin;
-  const dh = Math.floor(((total%1440)+1440)%1440/60);
-  const dm = ((total%1440)+1440)%1440%60;
-  return `${String(dh).padStart(2,'0')}:${String(dm).padStart(2,'0')}`;
-}
-function renderRoutes(data, origin, dest) {
-  const arr = document.getElementById('arrivalTime').value;
-  document.getElementById('rDistance').textContent = data.distance_km + ' km';
-  document.getElementById('rOrigin').textContent = origin.slice(0,30);
-  document.getElementById('rDest').textContent = dest.slice(0,30);
-  const pt = data.public_transport;
-  document.getElementById('pt-time').innerHTML = pt.time_minutes+'<small> min</small>';
-  document.getElementById('pt-cost').innerHTML = 'R$'+pt.cost_brl.toFixed(2).replace('.',',');
-  document.getElementById('pt-depart').innerHTML = calcDepart(arr,pt.time_minutes);
-  const ub = data.uber;
-  document.getElementById('ub-time').innerHTML = ub.time_minutes+'<small> min</small>';
-  document.getElementById('ub-depart').innerHTML = calcDepart(arr,ub.time_minutes);
-  document.getElementById('ub-pop').textContent = 'R$'+ub.costs.uber_pop.toFixed(2).replace('.',',');
-  document.getElementById('ub-x').textContent = 'R$'+ub.costs.uber_x.toFixed(2).replace('.',',');
-  document.getElementById('ub-xl').textContent = 'R$'+ub.costs.uber_xl.toFixed(2).replace('.',',');
-  const bk = data.bike;
-  document.getElementById('bk-time').innerHTML = bk.time_minutes+'<small> min</small>';
-  document.getElementById('bk-cost').innerHTML = 'R$'+bk.cost_brl.toFixed(2).replace('.',',');
-  document.getElementById('bk-depart').innerHTML = calcDepart(arr,bk.time_minutes);
-  document.getElementById('compareBody').innerHTML = `
-    <tr><td>🚇 Transporte Público</td><td>${pt.time_minutes} min</td><td>R$${pt.cost_brl.toFixed(2).replace('.',',')}</td><td>${calcDepart(arr,pt.time_minutes)}</td><td>⭐⭐⭐</td></tr>
-    <tr style="background:var(--green-light)"><td>🚗 Uber Pop</td><td>${ub.time_minutes} min</td><td>R$${ub.costs.uber_pop.toFixed(2).replace('.',',')}</td><td>${calcDepart(arr,ub.time_minutes)}</td><td>⭐⭐⭐⭐⭐</td></tr>
-    <tr><td>🚴 Bike Sharing</td><td>${bk.time_minutes} min</td><td>R$${bk.cost_brl.toFixed(2).replace('.',',')}</td><td>${calcDepart(arr,bk.time_minutes)}</td><td>⭐⭐⭐</td></tr>
-  `;
-  document.getElementById('resultsSection').classList.remove('hidden');
-}
-function saveRoute() {
-  const o = document.getElementById('origin').value;
-  const d = document.getElementById('destination').value;
-  const saved = JSON.parse(localStorage.getItem('trampo_routes')||'[]');
-  saved.unshift({ origin:o, destination:d, date:new Date().toLocaleDateString('pt-BR') });
-  localStorage.setItem('trampo_routes', JSON.stringify(saved.slice(0,5)));
-  renderSaved();
-  toast('Rota salva!');
-}
-function renderSaved() {
-  const saved = JSON.parse(localStorage.getItem('trampo_routes')||'[]');
-  const el = document.getElementById('savedRoutes');
-  if (!saved.length) { el.innerHTML='<p style="font-size:13px;color:var(--gray-500)">Nenhuma rota salva ainda.</p>'; return; }
-  el.innerHTML = saved.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--gray-100);font-size:13px"><div style="font-weight:600;color:var(--navy)">${r.origin.slice(0,25)}...</div><div style="color:var(--gray-500)">→ ${r.destination.slice(0,25)}...</div><div style="color:var(--gray-300);font-size:11px">${r.date}</div></div>`).join('');
-}
-document.addEventListener('DOMContentLoaded', renderSaved);
+
+document.getElementById('origin').addEventListener('keydown',      e => { if(e.key==='Enter') calcRoute(); });
+document.getElementById('destination').addEventListener('keydown', e => { if(e.key==='Enter') calcRoute(); });
 </script>
+
 <script src="../js/radio-bar.js"></script>
-</body></html>
+</body>
+</html>
