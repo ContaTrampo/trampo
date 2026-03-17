@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — TRAMPO</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body style="background:var(--gray-50)">
+
+<header class="header">
+  <nav class="nav container">
+    <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
+    <span style="font-size:13px;color:var(--gray-500);font-weight:600">⚙️ Painel Admin</span>
+  </nav>
+</header>
+
+<div style="max-width:900px;margin:100px auto 80px;padding:0 24px">
+
+  <!-- Login admin -->
+  <div id="login-box" class="card" style="max-width:420px;margin:0 auto">
+    <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:20px">🔐 Acesso Admin</h2>
+    <div class="form-group">
+      <label class="form-label">Chave de acesso</label>
+      <input type="password" id="admin-key" class="form-input" placeholder="••••••••••••"
+             onkeydown="if(event.key==='Enter')unlockAdmin()">
+    </div>
+    <button class="btn btn-primary btn-lg btn-block" onclick="unlockAdmin()">Entrar</button>
+  </div>
+
+  <!-- Painel -->
+  <div id="admin-panel" class="hidden">
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px" id="stats-grid">
+      <div class="stat-card"><div class="stat-num green" id="st-jobs">—</div><div class="stat-label">Vagas</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-users">—</div><div class="stat-label">Usuários</div></div>
+      <div class="stat-card"><div class="stat-num green" id="st-apps">—</div><div class="stat-label">Candidaturas</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-premium">—</div><div class="stat-label">Premium</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+
+      <!-- Publicar vaga -->
+      <div class="card">
+        <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:20px">➕ Publicar Vaga</h3>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="form-group"><label class="form-label">Título *</label><input type="text" id="j-title" class="form-input" placeholder="Dev Python Sr."></div>
+          <div class="form-group"><label class="form-label">Empresa *</label><input type="text" id="j-company" class="form-input" placeholder="Tech Corp"></div>
+          <div class="form-group"><label class="form-label">Descrição *</label><textarea id="j-desc" class="form-input" rows="3" placeholder="Responsabilidades, requisitos..."></textarea></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group"><label class="form-label">Cidade</label><input type="text" id="j-cidade" class="form-input" placeholder="Salvador"></div>
+            <div class="form-group"><label class="form-label">Estado</label><input type="text" id="j-estado" class="form-input" placeholder="BA" maxlength="2"></div>
+            <div class="form-group"><label class="form-label">Sal. mín (R$)</label><input type="number" id="j-salmin" class="form-input" placeholder="5000"></div>
+            <div class="form-group"><label class="form-label">Sal. máx (R$)</label><input type="number" id="j-salmax" class="form-input" placeholder="8000"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Modalidade</label>
+            <select id="j-mode" class="form-input form-select">
+              <option value="onsite">🏢 Presencial</option>
+              <option value="hybrid">🔄 Híbrido</option>
+              <option value="remote">🏠 Remoto</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Contrato</label>
+            <select id="j-contract" class="form-input form-select">
+              <option value="clt">CLT</option>
+              <option value="pj">PJ</option>
+              <option value="freelancer">Freelancer</option>
+              <option value="internship">Estágio</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Skills (separadas por vírgula)</label><input type="text" id="j-skills" class="form-input" placeholder="Python, React, Docker"></div>
+          <div class="form-group"><label class="form-label">Email de contato</label><input type="email" id="j-email" class="form-input" placeholder="vagas@empresa.com"></div>
+          <button class="btn btn-primary btn-lg btn-block" id="post-btn" onclick="postJob()">Publicar Vaga ✅</button>
+        </div>
+      </div>
+
+      <!-- Lista de vagas + Scraping -->
+      <div>
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px">🤖 Scraping Automático</h3>
+          <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px">Busca vagas da Adzuna, Remotive e The Muse e salva no banco. Pode levar até 60 segundos.</p>
+          <button class="btn btn-primary btn-lg btn-block" id="scrape-btn" onclick="runScrape()">🚀 Rodar Scraping Agora</button>
+          <div id="scrape-result" style="margin-top:12px;font-size:13px;font-weight:600;color:var(--green);display:none"></div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-size:16px;font-weight:700;color:var(--navy)">📋 Vagas no banco</h3>
+            <button class="btn btn-secondary btn-sm" onclick="loadJobs()">↻ Atualizar</button>
+          </div>
+          <div id="jobs-list" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script>
+const BASE_API = 'https://trampo-api-9nux.onrender.com/api';
+let ADMIN_KEY  = '';
+
+function unlockAdmin() {
+  const key = document.getElementById('admin-key').value.trim();
+  if (!key) { alert('Digite a chave'); return; }
+  ADMIN_KEY = key;
+  document.getElementById('login-box').classList.add('hidden');
+  document.getElementById('admin-panel').classList.remove('hidden');
+  loadStats();
+  loadJobs();
+}
+
+async function apiAdmin(path, method='GET', body=null) {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `${BASE_API}${path}${sep}key=${encodeURIComponent(ADMIN_KEY)}`;
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  return r.json();
+}
+
+async function loadStats() {
+  try {
+    const d = await apiAdmin('/admin/stats');
+    if (d.error) return;
+    document.getElementById('st-jobs').textContent    = d.jobs    ?? '—';
+    document.getElementById('st-users').textContent   = d.users   ?? '—';
+    document.getElementById('st-apps').textContent    = d.applications ?? '—';
+    document.getElementById('st-premium').textContent = d.premium ?? '—';
+  } catch(e) {}
+}
+
+async function loadJobs() {
+  const list = document.getElementById('jobs-list');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-500)"><div class="spinner spinner-green" style="margin:0 auto 8px"></div>Carregando...</div>';
+  try {
+    const d = await apiAdmin('/admin/jobs');
+    if (!d.jobs?.length) { list.innerHTML = '<p style="color:var(--gray-500);font-size:13px;text-align:center;padding:20px">Nenhuma vaga ainda</p>'; return; }
+    list.innerHTML = d.jobs.map(j => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);font-size:13px">
+        <div>
+          <div style="font-weight:700;color:var(--navy)">${j.title}</div>
+          <div style="color:var(--gray-500)">${j.company} · ${j.cidade||'—'}</div>
+        </div>
+        <button onclick="deleteJob(${j.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px 8px" title="Deletar">🗑️</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<p style="color:var(--danger);font-size:13px;text-align:center;padding:20px">Erro ao carregar</p>';
+  }
+}
+
+async function postJob() {
+  const title   = document.getElementById('j-title').value.trim();
+  const company = document.getElementById('j-company').value.trim();
+  const desc    = document.getElementById('j-desc').value.trim();
+  if (!title||!company||!desc) { alert('Preencha título, empresa e descrição'); return; }
+  const btn = document.getElementById('post-btn');
+  btn.textContent = 'Publicando...'; btn.disabled = true;
+  try {
+    const d = await apiAdmin('/admin/jobs', 'POST', {
+      title, company, description: desc,
+      cidade:           document.getElementById('j-cidade').value,
+      estado:           document.getElementById('j-estado').value,
+      salary_min:       parseInt(document.getElementById('j-salmin').value)||null,
+      salary_max:       parseInt(document.getElementById('j-salmax').value)||null,
+      work_mode:        document.getElementById('j-mode').value,
+      contract_type:    document.getElementById('j-contract').value,
+      required_skills:  document.getElementById('j-skills').value,
+      contact_email:    document.getElementById('j-email').value,
+    });
+    if (d.error) { alert('Erro: ' + d.error); }
+    else {
+      alert('✅ Vaga publicada! ID: ' + d.job_id);
+      ['j-title','j-company','j-desc','j-cidade','j-estado','j-salmin','j-salmax','j-skills','j-email'].forEach(id => document.getElementById(id).value = '');
+      loadJobs(); loadStats();
+    }
+  } catch(e) { alert('Erro de conexão'); }
+  btn.textContent = 'Publicar Vaga ✅'; btn.disabled = false;
+}
+
+async function deleteJob(id) {
+  if (!confirm('Deletar esta vaga?')) return;
+  await apiAdmin(`/admin/jobs/${id}`, 'DELETE');
+  loadJobs(); loadStats();
+}
+
+async function runScrape() {
+  const btn = document.getElementById('scrape-btn');
+  const res = document.getElementById('scrape-result');
+  btn.textContent = '⏳ Buscando vagas... (aguarde ~60s)'; btn.disabled = true;
+  res.style.display = 'none';
+  try {
+    const d = await apiAdmin('/admin/scrape-jobs');
+    res.textContent = d.message || d.error || 'Concluído';
+    res.style.color = d.error ? 'var(--danger)' : 'var(--green)';
+    res.style.display = 'block';
+    loadJobs(); loadStats();
+  } catch(e) {
+    res.textContent = 'Erro de conexão';
+    res.style.color = 'var(--danger)';
+    res.style.display = 'block';
+  }
+  btn.textContent = '🚀 Rodar Scraping Agora'; btn.disabled = false;
+}
+</script>
+</body>
+</html>
