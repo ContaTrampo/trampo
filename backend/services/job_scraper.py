@@ -1,74 +1,62 @@
 """TRAMPO v8 — Scraper de Vagas
 Fontes gratuitas:
-  1. Adzuna API (100 req/dia grátis)
-  2. Remotive API (100% gratuita, sem auth)
-  3. The Muse API (500 req/mês grátis)
+  1. Adzuna API       — 100 req/dia grátis
+  2. Remotive API     — 100% gratuita, sem auth
+  3. Arbeitnow API    — 100% gratuita, sem auth (vagas remotas)
+  4. Gupy Scraper     — portais públicos de grandes empresas BR
+  5. The Muse API     — 500 req/mês grátis
 """
 from __future__ import annotations
-import os
-import time
-import requests
+import os, time, requests
 from datetime import datetime, timezone
 
 
 # ─── Adzuna ──────────────────────────────────────────────────
 
 def fetch_adzuna_jobs(query: str = "desenvolvedor", city: str = "Salvador", max_results: int = 50) -> list[dict]:
-    """Busca vagas na API Adzuna (Brasil)."""
-    app_id = os.environ.get("ADZUNA_APP_ID", "")
+    app_id  = os.environ.get("ADZUNA_APP_ID", "")
     app_key = os.environ.get("ADZUNA_APP_KEY", "")
     if not app_id or not app_key:
-        print("⚠️ Adzuna: ADZUNA_APP_ID ou ADZUNA_APP_KEY não configurados")
+        print("⚠️ Adzuna: credenciais não configuradas")
         return []
-
     results = []
     try:
-        url = "https://api.adzuna.com/v1/api/jobs/br/search/1"
-        params = {
-            "app_id": app_id,
-            "app_key": app_key,
-            "results_per_page": min(max_results, 50),
-            "what": query,
-            "where": city,
-            "content-type": "application/json",
-        }
-        resp = requests.get(url, params=params, timeout=15)
+        resp = requests.get(
+            "https://api.adzuna.com/v1/api/jobs/br/search/1",
+            params={
+                "app_id": app_id, "app_key": app_key,
+                "results_per_page": min(max_results, 50),
+                "what": query, "where": city,
+                "content-type": "application/json",
+            }, timeout=15)
         resp.raise_for_status()
-        data = resp.json()
-
-        for job in data.get("results", []):
-            loc = job.get("location", {})
-            display_loc = loc.get("display_name", city)
-            area = loc.get("area", [])
+        for job in resp.json().get("results", []):
+            loc   = job.get("location", {})
+            area  = loc.get("area", [])
             cidade = area[-1] if area else city
-            estado = _guess_estado(cidade)
-
             results.append({
-                "title": job.get("title", "")[:200],
-                "company": job.get("company", {}).get("display_name", "Empresa")[:200],
+                "title":       job.get("title", "")[:200],
+                "company":     job.get("company", {}).get("display_name", "Empresa")[:200],
                 "description": job.get("description", "")[:3000],
-                "location": display_loc,
-                "cidade": cidade[:100],
-                "estado": estado,
-                "salary_min": int(job["salary_min"]) if job.get("salary_min") else None,
-                "salary_max": int(job["salary_max"]) if job.get("salary_max") else None,
-                "source_url": job.get("redirect_url", ""),
-                "source": "api_adzuna",
-                "work_mode": "remote" if "remoto" in job.get("title", "").lower() or "remote" in job.get("title", "").lower() else "onsite",
+                "location":    loc.get("display_name", city),
+                "cidade":      cidade[:100],
+                "estado":      _guess_estado(cidade),
+                "salary_min":  int(job["salary_min"]) if job.get("salary_min") else None,
+                "salary_max":  int(job["salary_max"]) if job.get("salary_max") else None,
+                "source_url":  job.get("redirect_url", ""),
+                "source":      "api_adzuna",
+                "work_mode":   "remote" if "remoto" in job.get("title", "").lower() else "onsite",
                 "contract_type": "clt",
-                "contact_email": "",
             })
-        print(f"✅ Adzuna: {len(results)} vagas obtidas para '{query}' em {city}")
+        print(f"✅ Adzuna: {len(results)} vagas para '{query}' em {city}")
     except Exception as e:
         print(f"❌ Adzuna falhou: {e}")
-
     return results
 
 
 # ─── Remotive ─────────────────────────────────────────────────
 
 def fetch_remotive_jobs(query: str = "", max_results: int = 30) -> list[dict]:
-    """Busca vagas remotas na API Remotive (gratuita, sem auth)."""
     results = []
     try:
         params = {"limit": max_results}
@@ -76,36 +64,144 @@ def fetch_remotive_jobs(query: str = "", max_results: int = 30) -> list[dict]:
             params["search"] = query
         resp = requests.get("https://remotive.com/api/remote-jobs", params=params, timeout=15)
         resp.raise_for_status()
-        jobs = resp.json().get("jobs", [])
-
-        for job in jobs:
+        for job in resp.json().get("jobs", []):
             results.append({
-                "title": job.get("title", "")[:200],
-                "company": job.get("company_name", "Empresa")[:200],
-                "description": job.get("description", "")[:3000],
-                "location": "Remoto",
-                "cidade": "",
-                "estado": "",
-                "salary_min": None,
-                "salary_max": None,
-                "source_url": job.get("url", ""),
-                "source": "api_remotive",
-                "work_mode": "remote",
-                "contract_type": "pj",
-                "contact_email": "",
+                "title":          job.get("title", "")[:200],
+                "company":        job.get("company_name", "Empresa")[:200],
+                "description":    job.get("description", "")[:3000],
+                "location":       "Remoto",
+                "cidade":         "", "estado": "",
+                "salary_min":     None, "salary_max": None,
+                "source_url":     job.get("url", ""),
+                "source":         "api_remotive",
+                "work_mode":      "remote",
+                "contract_type":  "pj",
                 "required_skills": _extract_tags(job.get("tags", [])),
             })
-        print(f"✅ Remotive: {len(results)} vagas remotas obtidas")
+        print(f"✅ Remotive: {len(results)} vagas para '{query}'")
     except Exception as e:
         print(f"❌ Remotive falhou: {e}")
-
     return results
+
+
+# ─── Arbeitnow (vagas remotas globais — grátis) ───────────────
+
+def fetch_arbeitnow_jobs(max_results: int = 30) -> list[dict]:
+    """API pública, sem auth, vagas remotas com opção BR."""
+    results = []
+    try:
+        resp = requests.get(
+            "https://arbeitnow.com/api/job-board-api",
+            params={"page": 1},
+            headers={"User-Agent": "TRAMPO-App/1.0"},
+            timeout=15
+        )
+        resp.raise_for_status()
+        jobs = resp.json().get("data", [])[:max_results]
+        for job in jobs:
+            results.append({
+                "title":         job.get("title", "")[:200],
+                "company":       job.get("company_name", "Empresa")[:200],
+                "description":   _strip_html(job.get("description", ""))[:3000],
+                "location":      "Remoto",
+                "cidade":        "", "estado": "",
+                "salary_min":    None, "salary_max": None,
+                "source_url":    job.get("url", ""),
+                "source":        "api_arbeitnow",
+                "work_mode":     "remote",
+                "contract_type": "pj",
+                "required_skills": ", ".join(job.get("tags", [])[:8]),
+            })
+        print(f"✅ Arbeitnow: {len(results)} vagas remotas")
+    except Exception as e:
+        print(f"❌ Arbeitnow falhou: {e}")
+    return results
+
+
+# ─── Gupy (portais públicos de grandes empresas BR) ───────────
+
+GUPY_COMPANIES = [
+    # Varejo
+    ("gpa",         "GPA - Pão de Açúcar"),
+    ("carrefour",   "Carrefour"),
+    ("assai",       "Assaí Atacadista"),
+    ("magazinevoce","Magazine Luiza"),
+    ("casasbahia",  "Casas Bahia"),
+    ("cea",         "C&A"),
+    ("riachuelo",   "Riachuelo"),
+    # Alimentação
+    ("habibs",      "Habib's"),
+    ("outback",     "Outback Steakhouse"),
+    # Tecnologia / Finanças
+    ("nubank",      "Nubank"),
+    ("picpay",      "PicPay"),
+    ("stone",       "Stone"),
+    ("ifood",       "iFood"),
+    ("quintoandar", "QuintoAndar"),
+    # Saúde
+    ("dasa",        "Dasa"),
+    ("amil",        "Amil"),
+    # Logística
+    ("loggi",       "Loggi"),
+    ("sequoia",     "Sequoia Logística"),
+    # Educação
+    ("cogna",       "Cogna Educação"),
+]
+
+def fetch_gupy_jobs(company_slug: str, company_name: str, max_results: int = 20) -> list[dict]:
+    """Busca vagas no portal público Gupy de uma empresa."""
+    results = []
+    try:
+        url  = f"https://{company_slug}.gupy.io/api/job"
+        resp = requests.get(url, params={"limit": max_results}, timeout=10,
+                            headers={"User-Agent": "Mozilla/5.0"})
+        if resp.status_code != 200:
+            return []
+        jobs = resp.json() if isinstance(resp.json(), list) else resp.json().get("data", [])
+        for job in jobs[:max_results]:
+            work_mode = "onsite"
+            name = (job.get("name") or "").lower()
+            if "remoto" in name or "home office" in name or "remote" in name:
+                work_mode = "remote"
+            elif "híbrido" in name or "hibrido" in name or "hybrid" in name:
+                work_mode = "hybrid"
+
+            city  = (job.get("city") or "").strip()
+            state = (job.get("state") or "").strip()
+
+            results.append({
+                "title":         (job.get("name") or "")[:200],
+                "company":       company_name,
+                "description":   _strip_html(job.get("description") or "")[:3000],
+                "location":      f"{city}, {state}" if city else "Brasil",
+                "cidade":        city[:100],
+                "estado":        state[:2].upper() if state else "",
+                "salary_min":    None, "salary_max": None,
+                "source_url":    f"https://{company_slug}.gupy.io/job/{job.get('id','')}",
+                "source":        f"gupy_{company_slug}",
+                "work_mode":     work_mode,
+                "contract_type": "clt",
+            })
+        if results:
+            print(f"✅ Gupy/{company_name}: {len(results)} vagas")
+    except Exception as e:
+        print(f"⚠️ Gupy/{company_slug} falhou: {e}")
+    return results
+
+
+def fetch_all_gupy_jobs() -> list[dict]:
+    """Busca vagas em todos os portais Gupy configurados."""
+    all_jobs = []
+    for slug, name in GUPY_COMPANIES:
+        jobs = fetch_gupy_jobs(slug, name, max_results=15)
+        all_jobs.extend(jobs)
+        time.sleep(0.5)  # respeita rate limit
+    return all_jobs
 
 
 # ─── The Muse ─────────────────────────────────────────────────
 
 def fetch_themuse_jobs(query: str = "developer", max_results: int = 20) -> list[dict]:
-    """Busca vagas na API The Muse (500 req/mês grátis)."""
     api_key = os.environ.get("THEMUSE_API_KEY", "")
     results = []
     try:
@@ -114,93 +210,72 @@ def fetch_themuse_jobs(query: str = "developer", max_results: int = 20) -> list[
             params["category"] = query
         if api_key:
             params["api_key"] = api_key
-
-        resp = requests.get("https://www.themuse.com/api/public/jobs", params=params, timeout=15)
+        resp = requests.get("https://www.themuse.com/api/public/jobs",
+                            params=params, timeout=15)
         resp.raise_for_status()
-        jobs = resp.json().get("results", [])[:max_results]
-
-        for job in jobs:
+        for job in resp.json().get("results", [])[:max_results]:
             loc_list = job.get("locations", [])
             location = loc_list[0].get("name", "Remoto") if loc_list else "Remoto"
-
-            # Extrai texto limpo da descrição HTML
-            desc_html = job.get("contents", "")
-            desc = _strip_html(desc_html)[:3000]
-
             results.append({
-                "title": job.get("name", "")[:200],
-                "company": job.get("company", {}).get("name", "Empresa")[:200],
-                "description": desc,
-                "location": location,
-                "cidade": "",
-                "estado": "",
-                "salary_min": None,
-                "salary_max": None,
-                "source_url": job.get("refs", {}).get("landing_page", ""),
-                "source": "api_themuse",
-                "work_mode": "remote",
+                "title":         job.get("name", "")[:200],
+                "company":       job.get("company", {}).get("name", "Empresa")[:200],
+                "description":   _strip_html(job.get("contents", ""))[:3000],
+                "location":      location, "cidade": "", "estado": "",
+                "salary_min":    None, "salary_max": None,
+                "source_url":    job.get("refs", {}).get("landing_page", ""),
+                "source":        "api_themuse",
+                "work_mode":     "remote",
                 "contract_type": "clt",
-                "contact_email": "",
             })
-        print(f"✅ The Muse: {len(results)} vagas obtidas")
+        print(f"✅ The Muse: {len(results)} vagas")
     except Exception as e:
         print(f"❌ The Muse falhou: {e}")
-
     return results
 
 
 # ─── Salvar no banco ──────────────────────────────────────────
 
 def save_jobs_to_db(jobs: list[dict]) -> int:
-    """Salva vagas no banco, ignorando duplicatas por source_url."""
     from database import db
     from models import Job
-
     saved = 0
     for job_data in jobs:
         try:
-            # Verifica duplicata
             url = job_data.get("source_url", "")
             if url and Job.query.filter_by(source_url=url).first():
                 continue
-
             job = Job(
-                title=job_data.get("title", "Sem título"),
-                company=job_data.get("company", "Empresa"),
-                description=job_data.get("description", ""),
-                location=job_data.get("location", ""),
-                cidade=job_data.get("cidade", ""),
-                estado=job_data.get("estado", ""),
-                salary_min=job_data.get("salary_min"),
-                salary_max=job_data.get("salary_max"),
-                source_url=url or None,
-                source=job_data.get("source", "scraped"),
-                work_mode=job_data.get("work_mode", "onsite"),
-                contract_type=job_data.get("contract_type", "clt"),
-                contact_email=job_data.get("contact_email", ""),
-                required_skills=job_data.get("required_skills", ""),
-                status="active",
-                is_paid=True,   # vagas de API são gratuitas/já pagas
-                posted_at=datetime.now(timezone.utc),
+                title            = job_data.get("title", "Sem título"),
+                company          = job_data.get("company", "Empresa"),
+                description      = job_data.get("description", ""),
+                location         = job_data.get("location", ""),
+                cidade           = job_data.get("cidade", ""),
+                estado           = job_data.get("estado", ""),
+                salary_min       = job_data.get("salary_min"),
+                salary_max       = job_data.get("salary_max"),
+                source_url       = url or None,
+                source           = job_data.get("source", "scraped"),
+                work_mode        = job_data.get("work_mode", "onsite"),
+                contract_type    = job_data.get("contract_type", "clt"),
+                contact_email    = job_data.get("contact_email", ""),
+                required_skills  = job_data.get("required_skills", ""),
+                status           = "active",
+                is_paid          = True,
+                posted_at        = datetime.now(timezone.utc),
             )
             db.session.add(job)
             saved += 1
-
-            # Commit em lotes de 20 para não sobrecarregar
             if saved % 20 == 0:
                 db.session.commit()
                 time.sleep(0.1)
-
         except Exception as e:
-            print(f"⚠️ Erro ao salvar vaga '{job_data.get('title')}': {e}")
+            print(f"⚠️ Erro ao salvar '{job_data.get('title')}': {e}")
             db.session.rollback()
-
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
         print(f"❌ Erro no commit final: {e}")
-
     print(f"💾 {saved} vagas novas salvas no banco")
     return saved
 
@@ -208,34 +283,36 @@ def save_jobs_to_db(jobs: list[dict]) -> int:
 # ─── Scraping completo ────────────────────────────────────────
 
 def run_full_scrape() -> dict:
-    """Executa todos os scrapers e salva no banco."""
-    queries_adzuna = ["desenvolvedor", "analista", "designer", "marketing", "engenheiro"]
-    queries_remotive = ["developer", "engineer", "design", "marketing", "data"]
-
     all_jobs = []
 
-    # Adzuna — várias queries para Salvador e São Paulo
-    for q in queries_adzuna:
-        jobs = fetch_adzuna_jobs(query=q, city="Salvador", max_results=20)
-        all_jobs.extend(jobs)
-        time.sleep(1)  # respeita rate limit
+    # 1. Adzuna — várias queries em Salvador e SP
+    for q in ["desenvolvedor", "analista", "designer", "marketing", "engenheiro",
+               "vendedor", "auxiliar", "assistente", "operador", "técnico"]:
+        all_jobs.extend(fetch_adzuna_jobs(query=q, city="Salvador", max_results=20))
+        time.sleep(0.8)
 
-    # Remotive — vagas remotas
-    for q in queries_remotive:
-        jobs = fetch_remotive_jobs(query=q, max_results=15)
-        all_jobs.extend(jobs)
-        time.sleep(0.5)
+    # 2. Remotive — vagas remotas variadas
+    for q in ["developer", "engineer", "design", "marketing", "data",
+               "customer", "finance", "product", "sales", "support"]:
+        all_jobs.extend(fetch_remotive_jobs(query=q, max_results=15))
+        time.sleep(0.4)
 
-    # The Muse — fallback
-    muse_jobs = fetch_themuse_jobs(query="developer", max_results=20)
-    all_jobs.extend(muse_jobs)
+    # 3. Arbeitnow — vagas remotas globais (grátis, sem auth)
+    all_jobs.extend(fetch_arbeitnow_jobs(max_results=40))
+    time.sleep(1)
+
+    # 4. Gupy — 20 grandes empresas brasileiras
+    all_jobs.extend(fetch_all_gupy_jobs())
+    time.sleep(1)
+
+    # 5. The Muse — fallback internacional
+    all_jobs.extend(fetch_themuse_jobs(query="developer", max_results=20))
 
     total_saved = save_jobs_to_db(all_jobs)
-
     result = {
         "total_fetched": len(all_jobs),
-        "total_saved": total_saved,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "total_saved":   total_saved,
+        "timestamp":     datetime.now(timezone.utc).isoformat(),
     }
     print(f"🏁 Scraping completo: {result}")
     return result
@@ -255,18 +332,22 @@ def _guess_estado(cidade: str) -> str:
         "fortaleza": "CE",
         "manaus": "AM",
         "brasília": "DF", "distrito federal": "DF",
+        "goiânia": "GO",
+        "florianópolis": "SC",
+        "belém": "PA",
+        "maceió": "AL",
+        "natal": "RN",
+        "teresina": "PI",
+        "campo grande": "MS",
     }
     return mapping.get(cidade.lower().strip(), "")
-
 
 def _extract_tags(tags: list) -> str:
     if isinstance(tags, list):
         return ", ".join(str(t) for t in tags[:10])
     return ""
 
-
 def _strip_html(html: str) -> str:
-    """Remove tags HTML simples."""
     import re
     text = re.sub(r"<[^>]+>", " ", html)
     text = re.sub(r"\s+", " ", text)
