@@ -1,36 +1,32 @@
-"""TRAMPO v8 — Email via Resend usando requests"""
-import os, json
-from flask import current_app
+"""TRAMPO v8 — Email via Gmail SMTP porta 465 (SSL)"""
+import os, smtplib, ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 
 def _send(to: str, subject: str, html: str, text: str = "") -> bool:
-    api_key = os.environ.get("RESEND_API_KEY", "")
-    if not api_key:
-        print(f"⚠️ RESEND_API_KEY não configurada → {to} | {subject}")
+    username = os.environ.get("MAIL_USERNAME", "")
+    password = os.environ.get("MAIL_PASSWORD", "")
+    if not username or not password:
+        print(f"⚠️ MAIL_USERNAME ou MAIL_PASSWORD não configurados")
         return False
     try:
-        import requests
-        resp = requests.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type":  "application/json",
-            },
-            json={
-                "from":    "TRAMPO <onboarding@resend.dev>",
-                "to":      [to],
-                "subject": subject,
-                "html":    html,
-            },
-            timeout=15,
-        )
-        if resp.status_code in (200, 201):
-            result = resp.json()
-            print(f"✅ Email enviado → {to} | id: {result.get('id')}")
-            return True
-        else:
-            print(f"❌ Resend erro {resp.status_code}: {resp.text}")
-            return False
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = f"TRAMPO <{username}>"
+        msg["To"]      = to
+        if text:
+            msg.attach(MIMEText(text, "plain", "utf-8"))
+        msg.attach(MIMEText(html, "html", "utf-8"))
+
+        # Porta 465 com SSL — funciona no Render free
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=20) as srv:
+            srv.login(username, password)
+            srv.sendmail(username, to, msg.as_string())
+
+        print(f"✅ Email enviado → {to}")
+        return True
     except Exception as e:
         print(f"❌ Erro email {to}: {e}")
         return False
@@ -39,7 +35,6 @@ def _send(to: str, subject: str, html: str, text: str = "") -> bool:
 def _wrap(body_html: str, title: str = "TRAMPO") -> str:
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title></head>
 <body style="font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding:0">
 <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
@@ -67,7 +62,7 @@ def send_verification_email(user, token: str) -> bool:
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Bem-vindo ao TRAMPO, {user.name.split()[0]}! 🎉</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
-        Confirme seu email para ativar sua conta.
+        Confirme seu email para ativar sua conta e começar a encontrar vagas incríveis.
       </p>
       {_btn(url, '✉️ Confirmar meu Email')}
       <p style="color:#94a3b8;font-size:13px;text-align:center">Este link expira em <strong>24 horas</strong>.</p>
@@ -120,17 +115,17 @@ def send_application_email(user, job, application) -> bool:
         <div style="margin-top:10px"><span style="color:#64748b;font-size:13px">Compatibilidade</span>
              <div style="font-weight:800;color:{score_color};font-size:20px">{round(application.match_score)}%</div></div>
       </div>
-      <p style="color:#94a3b8;font-size:13px;text-align:center">Tempo médio de resposta: 2 a 7 dias úteis. Boa sorte! 🤞</p>
+      <p style="color:#94a3b8;font-size:13px;text-align:center">Boa sorte! 🤞</p>
     """, "Currículo enviado — TRAMPO")
     _send(user.email, f"✅ Currículo enviado para {job.company}", html)
     if job.contact_email:
         html2 = _wrap(f"""
-          <h2 style="color:#0f172a;margin:0 0 8px">Nova candidatura recebida 🎯</h2>
+          <h2 style="color:#0f172a;margin:0 0 8px">Nova candidatura 🎯</h2>
           <p style="color:#475569;font-size:15px">
             <strong>{user.name}</strong> se candidatou à vaga <strong>{job.title}</strong>
             com <strong style="color:#10b981">{round(application.match_score)}%</strong> de compatibilidade.
+            Email: {user.email}
           </p>
-          <p style="color:#64748b;font-size:14px">Email: {user.email}</p>
         """, "Nova candidatura — TRAMPO")
         _send(job.contact_email, f"🎯 Candidatura: {user.name} — {job.title}", html2)
     return True
@@ -144,9 +139,7 @@ def send_support_confirmation(user, ticket) -> bool:
         Olá <strong>{user.name.split()[0]}</strong>, responderemos em até <strong>{sla}</strong>.
       </p>
       <div style="background:#f8fafc;border-radius:12px;padding:20px;margin-top:16px">
-        <div><span style="color:#64748b;font-size:13px">Ticket nº</span>
-             <div style="font-weight:700;color:#0f172a">#{ticket.id}</div></div>
-        <div style="margin-top:10px"><span style="color:#64748b;font-size:13px">Assunto</span>
+        <div><span style="color:#64748b;font-size:13px">Ticket #{ticket.id}</span>
              <div style="font-weight:700;color:#0f172a">{ticket.subject}</div></div>
       </div>
     """, "Suporte — TRAMPO")
@@ -157,7 +150,7 @@ def send_premium_activated(user) -> bool:
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Você é Premium! 💎</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7">
-        Parabéns, <strong>{user.name.split()[0]}</strong>! Seu plano Premium foi ativado.
+        Parabéns, <strong>{user.name.split()[0]}</strong>!
         Agora você tem 30 envios/dia e candidatura em destaque.
       </p>
     """, "Premium ativado — TRAMPO")
@@ -172,4 +165,3 @@ def send_job_payment_confirmation(user, job) -> bool:
       </p>
     """, "Vaga publicada — TRAMPO")
     return _send(user.email, f"🚀 Vaga publicada: {job.title}", html)
-```
