@@ -1,5 +1,5 @@
-"""TRAMPO v8 — Email via Resend (HTTP, funciona no Render free)"""
-import os, json, urllib.request, urllib.error
+"""TRAMPO v8 — Email via Resend usando requests"""
+import os, json
 from flask import current_app
 
 
@@ -9,30 +9,28 @@ def _send(to: str, subject: str, html: str, text: str = "") -> bool:
         print(f"⚠️ RESEND_API_KEY não configurada → {to} | {subject}")
         return False
     try:
-        payload = json.dumps({
-            "from":    "TRAMPO <onboarding@resend.dev>",
-            "to":      [to],
-            "subject": subject,
-            "html":    html,
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
+        import requests
+        resp = requests.post(
             "https://api.resend.com/emails",
-            data=payload,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type":  "application/json",
             },
-            method="POST",
+            json={
+                "from":    "TRAMPO <onboarding@resend.dev>",
+                "to":      [to],
+                "subject": subject,
+                "html":    html,
+            },
+            timeout=15,
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
+        if resp.status_code in (200, 201):
+            result = resp.json()
             print(f"✅ Email enviado → {to} | id: {result.get('id')}")
             return True
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8")
-        print(f"❌ Resend erro {e.code}: {body}")
-        return False
+        else:
+            print(f"❌ Resend erro {resp.status_code}: {resp.text}")
+            return False
     except Exception as e:
         print(f"❌ Erro email {to}: {e}")
         return False
@@ -64,12 +62,12 @@ def _btn(url: str, label: str, color: str = "#10b981") -> str:
 
 
 def send_verification_email(user, token: str) -> bool:
-    base = os.environ.get("BASE_URL", "https://trampoinc.netlify.app")
+    base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
     url  = f"{base}/pages/verify-email.html?token={token}"
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Bem-vindo ao TRAMPO, {user.name.split()[0]}! 🎉</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
-        Confirme seu email para ativar sua conta e começar a encontrar vagas incríveis.
+        Confirme seu email para ativar sua conta.
       </p>
       {_btn(url, '✉️ Confirmar meu Email')}
       <p style="color:#94a3b8;font-size:13px;text-align:center">Este link expira em <strong>24 horas</strong>.</p>
@@ -78,7 +76,7 @@ def send_verification_email(user, token: str) -> bool:
 
 
 def send_password_reset_email(user, token: str) -> bool:
-    base = os.environ.get("BASE_URL", "https://trampoinc.netlify.app")
+    base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
     url  = f"{base}/pages/forgot-password.html?token={token}"
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Redefinição de Senha 🔐</h2>
@@ -95,7 +93,7 @@ def send_password_reset_email(user, token: str) -> bool:
 
 
 def send_welcome_email(user) -> bool:
-    base = os.environ.get("BASE_URL", "https://trampoinc.netlify.app")
+    base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Conta ativada! Vamos começar 🚀</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px">
@@ -174,3 +172,4 @@ def send_job_payment_confirmation(user, job) -> bool:
       </p>
     """, "Vaga publicada — TRAMPO")
     return _send(user.email, f"🚀 Vaga publicada: {job.title}", html)
+```
