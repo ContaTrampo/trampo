@@ -1,41 +1,43 @@
-"""TRAMPO v8 — Email via Gmail SMTP porta 465 (SSL)"""
-import os, smtplib, ssl
+"""TRAMPO v8 — Email via Brevo SMTP (gratuito, 300/dia)"""
+import os, smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
 def _send(to: str, subject: str, html: str, text: str = "") -> bool:
-    username = os.environ.get("MAIL_USERNAME", "")
-    password = os.environ.get("MAIL_PASSWORD", "")
-    if not username or not password:
-        print(f"⚠️ MAIL_USERNAME ou MAIL_PASSWORD não configurados")
+    user = os.environ.get("BREVO_SMTP_USER", "")
+    pwd  = os.environ.get("BREVO_SMTP_PASS", "")
+    from_email = os.environ.get("MAIL_USERNAME", "bemvindo.trampo@gmail.com")
+
+    if not user or not pwd:
+        print(f"⚠️ BREVO_SMTP_USER ou BREVO_SMTP_PASS não configurados")
         return False
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = f"TRAMPO <{username}>"
+        msg["From"]    = f"TRAMPO <{from_email}>"
         msg["To"]      = to
+
         if text:
             msg.attach(MIMEText(text, "plain", "utf-8"))
         msg.attach(MIMEText(html, "html", "utf-8"))
 
-        # Porta 465 com SSL — funciona no Render free
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=20) as srv:
-            srv.login(username, password)
-            srv.sendmail(username, to, msg.as_string())
+        with smtplib.SMTP("smtp-relay.brevo.com", 587, timeout=20) as srv:
+            srv.ehlo()
+            srv.starttls()
+            srv.login(user, pwd)
+            srv.sendmail(from_email, to, msg.as_string())
 
-        print(f"✅ Email enviado → {to}")
+        print(f"✅ Email enviado via Brevo → {to}")
         return True
     except Exception as e:
-        print(f"❌ Erro email {to}: {e}")
+        print(f"❌ Erro email Brevo {to}: {e}")
         return False
 
 
 def _wrap(body_html: str, title: str = "TRAMPO") -> str:
     return f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<title>{title}</title></head>
+<html><head><meta charset="UTF-8"><title>{title}</title></head>
 <body style="font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding:0">
 <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
   <div style="background:linear-gradient(135deg,#10b981,#059669);padding:32px 40px;text-align:center">
