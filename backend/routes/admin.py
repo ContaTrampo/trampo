@@ -22,13 +22,7 @@ def scrape_jobs_public():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-```
 
-**Commit changes.**
-
-Depois que o Render atualizar (~2 min), acessa:
-```
-https://trampo-api-9nux.onrender.com/api/admin/scrape-jobs?key=trampo-scrape-2025
 
 def _require_admin():
     uid  = int(get_jwt_identity())
