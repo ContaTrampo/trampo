@@ -5,7 +5,30 @@ from database import db
 from models import User, Job, Application
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
+@admin_bp.route("/scrape-jobs", methods=["GET", "POST"])
+def scrape_jobs_public():
+    """Dispara scraping sem login — protegido por chave secreta."""
+    from flask import current_app
+    secret = request.args.get("key") or (request.get_json() or {}).get("key", "")
+    if secret != current_app.config.get("SCRAPE_SECRET", "trampo-scrape-2025"):
+        return jsonify({"error": "Chave inválida"}), 403
+    try:
+        from services.job_scraper import run_full_scrape
+        result = run_full_scrape()
+        return jsonify({
+            "message": f"✅ {result['total_saved']} novas vagas salvas!",
+            "total_fetched": result["total_fetched"],
+            "total_saved":   result["total_saved"],
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+```
 
+**Commit changes.**
+
+Depois que o Render atualizar (~2 min), acessa:
+```
+https://trampo-api-9nux.onrender.com/api/admin/scrape-jobs?key=trampo-scrape-2025
 
 def _require_admin():
     uid  = int(get_jwt_identity())
