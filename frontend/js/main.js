@@ -101,11 +101,12 @@ async function handleLogin(e) {
     Auth.save(data.token, data.user);
     closeAuthModal();
     updateNavUI();
-    toast(`Bem-vindo de volta, ${data.user.name.split(' ')[0]}! 🚀`);
+    toast(`Bem-vindo, ${data.user.name.split(' ')[0]}! 🚀`);
+    // Recrutador vai pro dashboard, candidato fica na home
     setTimeout(() => {
       if (data.user.role === 'recruiter') window.location.href = '/pages/recruiter.html';
-      else window.location.href = '/pages/profile.html';
-    }, 600);
+      // candidato fica na home — não redireciona
+    }, 500);
   } catch (err) {
     toast(err.message, 'error');
   } finally {
@@ -121,23 +122,16 @@ async function handleRegister(e) {
   const email    = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
   const role     = document.getElementById('regRole').value;
-
-  if (password.length < 6) {
-    toast('Senha precisa ter pelo menos 6 caracteres', 'error');
-    return;
-  }
-
+  if (password.length < 6) { toast('Senha precisa ter pelo menos 6 caracteres', 'error'); return; }
   setLoading(btn, true);
   try {
     const data = await post('/auth/register', { name, email, password, role });
     Auth.save(data.token, data.user);
     closeAuthModal();
     updateNavUI();
-    toast(`Conta criada! Verifique seu email, ${name.split(' ')[0]}! ✉️`, 'success');
-    setTimeout(() => {
-      if (role === 'recruiter') window.location.href = '/pages/recruiter.html';
-      else window.location.href = '/pages/profile.html';
-    }, 1200);
+    toast(`Conta criada! Verifique seu email ${email} ✉️`, 'success');
+    // Vai para home, não para perfil — deixa usuário ver o site primeiro
+    setTimeout(() => { window.location.href = '/'; }, 1500);
   } catch (err) {
     toast(err.message, 'error');
   } finally {
