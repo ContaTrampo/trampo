@@ -36,7 +36,15 @@
     <!-- SIDEBAR PERFIL -->
     <div>
       <div class="card text-center" style="margin-bottom:20px">
-        <div class="sidebar-avatar" id="profileAvatar">?</div>
+        <!-- Foto / Avatar com clique para upload -->
+        <div style="text-align:center;margin-bottom:20px">
+          <div id="profileAvatar" style="width:80px;height:80px;border-radius:50%;background:var(--green);color:white;font-size:28px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;cursor:pointer;overflow:hidden" onclick="document.getElementById('photoInput').click()">
+            <span id="avatarInitials">?</span>
+            <img id="avatarImg" src="" style="display:none;width:100%;height:100%;object-fit:cover">
+          </div>
+          <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="uploadPhoto(this.files[0])">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('photoInput').click()">📷 Trocar foto</button>
+        </div>
         <div class="sidebar-name" id="profileName">Carregando...</div>
         <div class="sidebar-role" id="profileTitle">—</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
@@ -120,6 +128,29 @@
 
 <script src="../js/main.js"></script>
 <script>
+// Função de upload de foto
+async function uploadPhoto(file) {
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { toast('Foto muito grande (máx 2MB)', 'warning'); return; }
+  const fd = new FormData();
+  fd.append('photo', file);
+  try {
+    const resp = await fetch(API + '/candidates/photo', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
+      body: fd
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Erro ao enviar foto');
+    if (data.photo_url) {
+      document.getElementById('avatarImg').src = data.photo_url;
+      document.getElementById('avatarImg').style.display = 'block';
+      document.getElementById('avatarInitials').style.display = 'none';
+      toast('Foto atualizada! ✅');
+    }
+  } catch(e) { toast(e.message, 'error'); }
+}
+
 async function loadProfile() {
   if (!Auth.isLoggedIn()) return;
   try {
@@ -128,8 +159,14 @@ async function loadProfile() {
     const user = Auth.getUser();
     if (user) {
       const initials = user.name?.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)||'?';
-      document.getElementById('profileAvatar').textContent = initials;
+      document.getElementById('avatarInitials').textContent = initials;
       document.getElementById('profileName').textContent = user.name;
+    }
+    // Se houver foto, exibe
+    if (p?.photo_url) {
+      document.getElementById('avatarImg').src = p.photo_url;
+      document.getElementById('avatarImg').style.display = 'block';
+      document.getElementById('avatarInitials').style.display = 'none';
     }
     if (p) {
       document.getElementById('jobTitle').value = p.job_title||'';
@@ -217,4 +254,5 @@ function handleFileUpload(input) {
 document.addEventListener('DOMContentLoaded', loadProfile);
 </script>
 <script src="../js/radio-bar.js"></script>
-</body></html>
+</body>
+</html>
