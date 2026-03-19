@@ -4,6 +4,17 @@ import smtplib
 import requests  # necessário para WhatsApp
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timezone, timedelta
+
+
+def _saudacao() -> str:
+    """Retorna 'Bom dia', 'Boa tarde' ou 'Boa noite' baseado no horário de Brasília."""
+    hora = datetime.now(timezone(timedelta(hours=-3))).hour
+    if hora < 12:
+        return "Bom dia"
+    if hora < 18:
+        return "Boa tarde"
+    return "Boa noite"
 
 
 def _send(to: str, subject: str, html: str, text: str = "") -> bool:
@@ -63,10 +74,11 @@ def _btn(url: str, label: str, color: str = "#10b981") -> str:
 def send_verification_email(user, token: str) -> bool:
     base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
     url  = f"{base}/pages/verify-email.html?token={token}"
+    saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Bem-vindo ao TRAMPO, {user.name.split()[0]}! 🎉</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
-        Confirme seu email para ativar sua conta e começar a encontrar vagas incríveis.
+        {saud}, <strong>{user.name.split()[0]}</strong>! Confirme seu email para ativar sua conta e começar a encontrar vagas incríveis.
       </p>
       {_btn(url, '✉️ Confirmar meu Email')}
       <p style="color:#94a3b8;font-size:13px;text-align:center">Este link expira em <strong>24 horas</strong>.</p>
@@ -77,10 +89,11 @@ def send_verification_email(user, token: str) -> bool:
 def send_password_reset_email(user, token: str) -> bool:
     base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
     url  = f"{base}/pages/forgot-password.html?token={token}"
+    saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Redefinição de Senha 🔐</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
-        Recebemos uma solicitação para redefinir a senha de <strong>{user.email}</strong>.
+        {saud}, <strong>{user.name.split()[0]}</strong>! Recebemos uma solicitação para redefinir a senha de <strong>{user.email}</strong>.
       </p>
       {_btn(url, '🔑 Redefinir minha Senha', '#6366f1')}
       <p style="color:#94a3b8;font-size:13px;text-align:center">
@@ -93,10 +106,11 @@ def send_password_reset_email(user, token: str) -> bool:
 
 def send_welcome_email(user) -> bool:
     base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
+    saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Conta ativada! Vamos começar 🚀</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px">
-        Olá <strong>{user.name.split()[0]}</strong>, sua conta foi ativada!
+        {saud}, <strong>{user.name.split()[0]}</strong>! Sua conta foi ativada!
         Complete seu perfil para receber vagas compatíveis.
       </p>
       {_btn(f"{base}/pages/profile.html", '👤 Completar meu Perfil')}
@@ -106,10 +120,11 @@ def send_welcome_email(user) -> bool:
 
 def send_application_email(user, job, application) -> bool:
     score_color = "#10b981" if application.match_score >= 75 else "#f59e0b"
+    saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Currículo enviado! ✅</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px">
-        Olá <strong>{user.name.split()[0]}</strong>, seu currículo chegou em <strong>{job.company}</strong>!
+        {saud}, <strong>{user.name.split()[0]}</strong>! Seu currículo chegou em <strong>{job.company}</strong>!
       </p>
       <div style="background:#f8fafc;border-radius:12px;padding:24px;margin-bottom:24px;border-left:4px solid #10b981">
         <div><span style="color:#64748b;font-size:13px">Vaga</span>
@@ -126,7 +141,7 @@ def send_application_email(user, job, application) -> bool:
         html2 = _wrap(f"""
           <h2 style="color:#0f172a;margin:0 0 8px">Nova candidatura 🎯</h2>
           <p style="color:#475569;font-size:15px">
-            <strong>{user.name}</strong> se candidatou à vaga <strong>{job.title}</strong>
+            {saud}, <strong>{job.company}</strong>! <strong>{user.name}</strong> se candidatou à vaga <strong>{job.title}</strong>
             com <strong style="color:#10b981">{round(application.match_score)}%</strong> de compatibilidade.
             Email: {user.email}
           </p>
@@ -137,10 +152,11 @@ def send_application_email(user, job, application) -> bool:
 
 def send_support_confirmation(user, ticket) -> bool:
     sla  = "2 horas" if user.is_premium else "24 horas"
+    saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Mensagem recebida ✅</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7">
-        Olá <strong>{user.name.split()[0]}</strong>, responderemos em até <strong>{sla}</strong>.
+        {saud}, <strong>{user.name.split()[0]}</strong>! Responderemos em até <strong>{sla}</strong>.
       </p>
       <div style="background:#f8fafc;border-radius:12px;padding:20px;margin-top:16px">
         <div><span style="color:#64748b;font-size:13px">Ticket #{ticket.id}</span>
@@ -151,24 +167,26 @@ def send_support_confirmation(user, ticket) -> bool:
 
 
 def send_premium_activated(user) -> bool:
+    saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Você é Premium! 💎</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7">
-        Parabéns, <strong>{user.name.split()[0]}</strong>!
+        {saud}, <strong>{user.name.split()[0]}</strong>! Parabéns!
         Agora você tem 30 envios/dia e candidatura em destaque.
       </p>
     """, "Premium ativado — TRAMPO")
     # Opcional: enviar também WhatsApp
     if user.phone:
-        send_whatsapp(user.phone, f"Parabéns {user.name.split()[0]}! Você agora é Premium no TRAMPO. 30 envios/dia, destaques e muito mais. 🚀")
+        send_whatsapp(user.phone, f"{saud} {user.name.split()[0]}! Você agora é Premium no TRAMPO. 30 envios/dia, destaques e muito mais. 🚀")
     return _send(user.email, "💎 Bem-vindo ao TRAMPO Premium!", html)
 
 
 def send_job_payment_confirmation(user, job) -> bool:
+    saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Vaga publicada! 🚀</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7">
-        Olá <strong>{user.name.split()[0]}</strong>, sua vaga <strong>{job.title}</strong> está no ar!
+        {saud}, <strong>{user.name.split()[0]}</strong>! Sua vaga <strong>{job.title}</strong> está no ar!
       </p>
     """, "Vaga publicada — TRAMPO")
     return _send(user.email, f"🚀 Vaga publicada: {job.title}", html)
