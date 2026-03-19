@@ -1,5 +1,7 @@
-"""TRAMPO v8 — Email via Brevo SMTP (gratuito, 300/dia)"""
-import os, smtplib
+"""TRAMPO v8 — Email via Brevo SMTP (gratuito, 300/dia) + WhatsApp via CallMeBot (gratuito)"""
+import os
+import smtplib
+import requests  # necessário para WhatsApp
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -156,6 +158,9 @@ def send_premium_activated(user) -> bool:
         Agora você tem 30 envios/dia e candidatura em destaque.
       </p>
     """, "Premium ativado — TRAMPO")
+    # Opcional: enviar também WhatsApp
+    if user.phone:
+        send_whatsapp(user.phone, f"Parabéns {user.name.split()[0]}! Você agora é Premium no TRAMPO. 30 envios/dia, destaques e muito mais. 🚀")
     return _send(user.email, "💎 Bem-vindo ao TRAMPO Premium!", html)
 
 
@@ -167,3 +172,40 @@ def send_job_payment_confirmation(user, job) -> bool:
       </p>
     """, "Vaga publicada — TRAMPO")
     return _send(user.email, f"🚀 Vaga publicada: {job.title}", html)
+
+
+# ───────────────────────────────────────────────────────────────
+# WhatsApp gratuito via CallMeBot (requer cadastro e chave pessoal)
+# Alternativas gratuitas caso o CallMeBot não funcione:
+#   - Telegram Bot (gratuito, mas usuário precisa ter Telegram)
+#   - Twilio (tem trial gratuito, mas depois cobra)
+#   - Z-API (não gratuito)
+#   - Evolution API (self-hosted, gratuito)
+# Por simplicidade, mantemos CallMeBot – o usuário deve obter sua chave em callmebot.com
+# ───────────────────────────────────────────────────────────────
+
+def send_whatsapp(phone: str, message: str) -> bool:
+    """Envia mensagem WhatsApp via CallMeBot (gratuito para teste)."""
+    try:
+        import urllib.parse
+        api_key = os.environ.get("CALLMEBOT_API_KEY", "")
+        if not api_key:
+            print("⚠️ CALLMEBOT_API_KEY não configurada")
+            return False
+
+        # Remove caracteres não numéricos e adiciona código do Brasil se necessário
+        phone_clean = phone.replace("+", "").replace(" ", "").replace("-", "")
+        if not phone_clean.startswith("55"):
+            phone_clean = "55" + phone_clean
+
+        url = f"https://api.callmebot.com/whatsapp.php?phone={phone_clean}&text={urllib.parse.quote(message)}&apikey={api_key}"
+        resp = requests.get(url, timeout=15)
+        if resp.status_code == 200:
+            print(f"✅ WhatsApp enviado para {phone_clean}")
+            return True
+        else:
+            print(f"❌ WhatsApp falhou: {resp.text}")
+            return False
+    except Exception as e:
+        print(f"⚠️ Erro WhatsApp: {e}")
+        return False
