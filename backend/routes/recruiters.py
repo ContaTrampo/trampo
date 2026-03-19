@@ -1,4 +1,4 @@
-"""TRAMPO v7 — Rotas dos Recrutadores"""
+"""TRAMPO v7 — Rotas dos Recrutadores (com ranking de candidatos)"""
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
@@ -70,6 +70,45 @@ def job_candidates(job_id):
             "profile":        p.to_dict() if p else {},
         })
     return jsonify({"candidates": result, "total": len(result)}), 200
+
+
+@recruiters_bp.route("/jobs/<int:job_id>/candidates/ranked", methods=["GET"])
+@jwt_required()
+def ranked_candidates(job_id):
+    """Retorna candidatos rankeados por compatibilidade com a vaga (versão simplificada)."""
+    user_id = int(get_jwt_identity())
+    job = db.session.get(Job, job_id)
+    if not job:
+        return jsonify({"error": "Vaga não encontrada"}), 404
+    if job.recruiter_id is not None and job.recruiter_id != user_id:
+        return jsonify({"error": "Sem permissão"}), 403
+
+    apps = Application.query.filter_by(job_id=job_id).all()
+    # Ordena por maior match_score
+    ranked = sorted(apps, key=lambda a: a.match_score or 0, reverse=True)
+
+    candidates_list = []
+    for app in ranked:
+        user = db.session.get(User, app.user_id)
+        if not user:
+            continue
+        # Monta link do WhatsApp se houver telefone
+        whatsapp_link = None
+        if user.phone:
+            # Limpa o telefone: remove +55, espaços, traços
+            phone_clean = user.phone.replace('+55', '').replace(' ', '').replace('-', '')
+            whatsapp_link = f"https://wa.me/55{phone_clean}?text=Olá%20{user.name.split()[0]},%20vi%20sua%20candidatura%20para%20{job.title.replace(' ', '%20')}"
+
+        candidates_list.append({
+            "application_id": app.id,
+            "user_name":      user.name,
+            "user_email":     user.email,
+            "match_score":    round(app.match_score or 0),
+            "sent_at":        app.sent_at.isoformat() if app.sent_at else None,
+            "whatsapp_link":  whatsapp_link,
+        })
+
+    return jsonify({"candidates": candidates_list}), 200
 
 
 @recruiters_bp.route("/jobs/<int:job_id>/top-candidates", methods=["GET"])
