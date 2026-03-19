@@ -239,11 +239,26 @@ def save_jobs_to_db(jobs: list[dict]) -> int:
     from database import db
     from models import Job
     saved = 0
+
+    # Lista de empresas que merecem destaque
+    big_companies = ["nubank", "ifood", "stone", "mercado livre", "amazon", "google", "microsoft", "magazine luiza", "carrefour", "gpa", "pão de açúcar", "outback", "habib's", "c&a", "riachuelo", "dasa", "amil", "loggi", "sequoia", "cogna", "picpay", "quintoandar"]
+
     for job_data in jobs:
         try:
             url = job_data.get("source_url", "")
             if url and Job.query.filter_by(source_url=url).first():
                 continue
+
+            # Determina se é destaque
+            is_featured = False
+            salary_min = job_data.get("salary_min")
+            if salary_min and salary_min >= 5000:
+                is_featured = True
+            else:
+                company_lower = (job_data.get("company") or "").lower()
+                if any(c in company_lower for c in big_companies):
+                    is_featured = True
+
             job = Job(
                 title            = job_data.get("title", "Sem título"),
                 company          = job_data.get("company", "Empresa"),
@@ -251,7 +266,7 @@ def save_jobs_to_db(jobs: list[dict]) -> int:
                 location         = job_data.get("location", ""),
                 cidade           = job_data.get("cidade", ""),
                 estado           = job_data.get("estado", ""),
-                salary_min       = job_data.get("salary_min"),
+                salary_min       = salary_min,
                 salary_max       = job_data.get("salary_max"),
                 source_url       = url or None,
                 source           = job_data.get("source", "scraped"),
@@ -261,6 +276,7 @@ def save_jobs_to_db(jobs: list[dict]) -> int:
                 required_skills  = job_data.get("required_skills", ""),
                 status           = "active",
                 is_paid          = True,
+                is_featured      = is_featured,   # <- novo campo
                 posted_at        = datetime.now(timezone.utc),
             )
             db.session.add(job)
