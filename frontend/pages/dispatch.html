@@ -132,35 +132,7 @@
   </div>
 </div>
 
-<!-- ─── MODAL ENVIO ─── -->
-<div class="modal-overlay" id="sendModal">
-  <div class="modal" style="max-width:560px">
-    <button class="modal-close" onclick="closeSendModal()">✕</button>
-    <div style="margin-bottom:8px">
-      <span class="badge badge-green" id="modalMatchScore">Match 90%</span>
-    </div>
-    <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:4px" id="modalJobTitle">Desenvolvedor Python Sr.</h2>
-    <p style="color:var(--gray-500);font-size:14px;margin-bottom:24px" id="modalJobMeta">Tech Corp Brasil · São Paulo, SP</p>
-
-    <div style="margin-bottom:20px">
-      <label class="form-label">✉️ Carta de Apresentação (editável)</label>
-      <textarea id="coverLetterText" class="form-input" rows="7" placeholder="Gerando carta personalizada..."></textarea>
-      <p class="form-hint">Esta carta foi escrita pela IA para esta vaga específica. Você pode editar antes de enviar.</p>
-    </div>
-
-    <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;font-size:13px">
-      <strong>📧 Será enviado para:</strong> <span id="modalEmail" style="color:var(--green)">jobs@empresa.com</span><br>
-      <strong>📎 Anexo:</strong> Seu currículo em PDF
-    </div>
-
-    <div style="display:flex;gap:12px">
-      <button class="btn btn-primary btn-lg" style="flex:1" id="confirmSendBtn" onclick="confirmSend()">✅ Confirmar Envio</button>
-      <button class="btn btn-secondary" onclick="closeSendModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ─── MODAL AUTH ─── -->
+<!-- ─── MODAL AUTH (já existente) ─── -->
 <div class="modal-overlay" id="authModal">
   <div class="modal">
     <button class="modal-close" onclick="closeAuthModal()">✕</button>
@@ -274,8 +246,8 @@ function renderMatches(matches) {
         ${(m.job.required_skills||[]).slice(0,4).map(s=>`<span class="match-skill">${s}</span>`).join('')}
       </div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-primary btn-sm" onclick='openSendModal(${JSON.stringify(m)})'>📤 Enviar meu CV</button>
-        <button class="btn btn-secondary btn-sm">Ver detalhes</button>
+        <!-- Botão único: agora abre detalhes completos da vaga -->
+        <button class="btn btn-primary btn-sm" onclick='applyJob(${m.job.id})'>📋 Ver vaga e candidatar</button>
       </div>
     </div>
   `).join('');
@@ -283,40 +255,65 @@ function renderMatches(matches) {
   document.getElementById('dispatchBtn').classList.remove('hidden');
 }
 
-function openSendModal(match) {
-  currentJob = match;
-  document.getElementById('modalMatchScore').textContent = `Match ${match.score}%`;
-  document.getElementById('modalJobTitle').textContent = match.job.title;
-  document.getElementById('modalJobMeta').textContent = `${match.job.company} · ${match.job.location || ''}`;
-  document.getElementById('modalEmail').textContent = match.job.contact_email || 'Não informado';
-  const user = Auth.getUser();
-  const name = user?.name || 'Candidato';
-  const skills = (match.job.required_skills||[]).slice(0,3).join(', ');
-  document.getElementById('coverLetterText').value = `Olá,\n\nMeu nome é ${name} e tenho interesse na vaga de ${match.job.title} na ${match.job.company}.\n\nPossuo experiência com as tecnologias que vocês buscam, especialmente ${skills||'as skills requeridas'}. Acredito que meu perfil se alinha com o que a empresa precisa e poderia contribuir desde o primeiro dia.\n\nEstou disponível para uma conversa a qualquer momento. Segue meu currículo em anexo.\n\nAtenciosamente,\n${name}`;
-  document.getElementById('sendModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
+// NOVAS FUNÇÕES: applyJob e confirmApply (substituem o fluxo anterior)
+async function applyJob(jobId) {
+  if (!Auth.isLoggedIn()) {
+    toast('Faça login para se candidatar', 'warning');
+    return;
+  }
+  // Busca detalhes completos da vaga
+  try {
+    const job = await get(`/jobs/${jobId}`);
+    showJobDetails(job);
+  } catch(e) {
+    toast('Erro ao carregar vaga', 'error');
+  }
 }
 
-function closeSendModal() {
-  document.getElementById('sendModal').classList.remove('active');
-  document.body.style.overflow = '';
-  currentJob = null;
+function showJobDetails(job) {
+  // Remove qualquer modal antigo
+  const old = document.getElementById('jobDetailOverlay');
+  if (old) old.remove();
+
+  const detailDiv = document.createElement('div');
+  detailDiv.id = 'jobDetailOverlay';
+  detailDiv.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px';
+  detailDiv.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:36px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;position:relative">
+      <button onclick="document.getElementById('jobDetailOverlay').remove()" style="position:absolute;top:16px;right:16px;background:var(--gray-100);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+      <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${job.company}</div>
+      <h2 style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:16px">${job.title}</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+        ${job.cidade ? `<span class="job-tag">📍 ${job.cidade}${job.estado?', '+job.estado:''}</span>` : ''}
+        <span class="job-tag">${job.work_mode==='remote'?'🏠 Remoto':job.work_mode==='hybrid'?'🔄 Híbrido':'🏢 Presencial'}</span>
+        <span class="job-tag">${job.contract_type?.toUpperCase()}</span>
+        ${job.salary_min ? `<span class="job-tag" style="background:var(--green-light);color:var(--green-dark)">R$ ${job.salary_min.toLocaleString('pt-BR')}${job.salary_max?' – R$ '+job.salary_max.toLocaleString('pt-BR'):''}</span>` : ''}
+      </div>
+      ${job.required_skills ? `<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--gray-500);margin-bottom:8px">SKILLS</div><div>${job.required_skills.split(',').map(s=>`<span class="job-tag" style="margin:2px;display:inline-block">${s.trim()}</span>`).join('')}</div></div>` : ''}
+      <div style="font-size:14px;color:var(--gray-700);line-height:1.7;margin-bottom:24px;white-space:pre-line">${job.description}</div>
+      ${job.benefits ? `<div style="background:var(--green-light);border-radius:12px;padding:16px;margin-bottom:24px"><div style="font-size:12px;font-weight:700;color:var(--green-dark);margin-bottom:6px">BENEFÍCIOS</div><div style="font-size:14px;color:var(--gray-700)">${job.benefits}</div></div>` : ''}
+      <button id="confirmApplyBtn" class="btn btn-primary btn-lg btn-block" onclick="confirmApply(${job.id})">
+        🚀 Candidatar-me a esta vaga
+      </button>
+    </div>
+  `;
+  document.body.appendChild(detailDiv);
 }
 
-async function confirmSend() {
-  if (!currentJob) return;
-  const btn = document.getElementById('confirmSendBtn');
+async function confirmApply(jobId) {
+  const btn = document.getElementById('confirmApplyBtn');
   setLoading(btn, true);
   try {
-    await post('/applications/send', { job_id: currentJob.job.id, cover_letter: document.getElementById('coverLetterText').value });
-    closeSendModal();
-    toast(`✅ Currículo enviado para ${currentJob.job.company}!`);
+    const r = await post('/applications/', { job_id: jobId });
+    document.getElementById('jobDetailOverlay')?.remove();
+    toast(r.message || 'Candidatura enviada! ✅');
+    // Atualiza cota e histórico
     await loadQuota();
     await loadHistory();
-  } catch (err) {
+  } catch(err) {
     toast(err.message, 'error');
   } finally {
-    setLoading(btn, false);
+    if(btn) setLoading(btn, false);
   }
 }
 
