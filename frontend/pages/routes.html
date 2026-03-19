@@ -22,6 +22,7 @@
     .step-text { font-size:13px; color:var(--gray-700); line-height:1.5; }
     .app-btn { display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:14px; color:white; font-weight:700; font-size:14px; text-decoration:none; transition:opacity .2s; cursor:pointer; border:none; width:100%; }
     .app-btn:hover { opacity:.85; }
+    .suggestions-box { position:absolute; top:100%; left:0; right:0; background:white; border:1.5px solid var(--gray-100); border-radius:12px; box-shadow:var(--shadow); z-index:100; display:none; max-height:200px; overflow-y:auto; }
   </style>
 </head>
 <body>
@@ -66,9 +67,11 @@
       <div class="card" style="margin-bottom:20px">
         <h3 style="font-size:17px;font-weight:700;color:var(--navy);margin-bottom:20px">📍 Planejar rota</h3>
 
-        <div class="form-group">
+        <!-- CAMPO ORIGEM COM AUTOCOMPLETE -->
+        <div class="form-group" style="position:relative">
           <label class="form-label">Sua localização</label>
-          <input id="origin" class="form-input" placeholder="Ex: Pelourinho, Salvador, BA">
+          <input id="origin" class="form-input" placeholder="Ex: Pelourinho, Salvador, BA" autocomplete="off" oninput="searchAddress(this.value, 'origin-suggestions')">
+          <div id="origin-suggestions" class="suggestions-box"></div>
           <button class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%" onclick="getMyLocation()">
             📱 Usar minha localização atual
           </button>
@@ -78,9 +81,11 @@
           <button onclick="swapLocations()" style="background:var(--gray-100);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer" title="Inverter">⇅</button>
         </div>
 
-        <div class="form-group">
+        <!-- CAMPO DESTINO COM AUTOCOMPLETE -->
+        <div class="form-group" style="position:relative">
           <label class="form-label">Destino (empresa / entrevista)</label>
-          <input id="destination" class="form-input" placeholder="Ex: Av. Tancredo Neves, 1632, Salvador">
+          <input id="destination" class="form-input" placeholder="Ex: Av. Tancredo Neves, 1632, Salvador" autocomplete="off" oninput="searchAddress(this.value, 'dest-suggestions')">
+          <div id="dest-suggestions" class="suggestions-box"></div>
         </div>
 
         <div style="margin:16px 0 8px;font-size:13px;font-weight:700;color:var(--gray-700)">Modo de transporte</div>
@@ -199,6 +204,38 @@ let lastFrom = null, lastTo = null, lastDistKm = 0;
 const iconA = L.divIcon({ html:'<div style="background:#00C853;color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)">A</div>', iconSize:[32,32], iconAnchor:[16,16], className:'' });
 const iconB = L.divIcon({ html:'<div style="background:#EF4444;color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)">B</div>', iconSize:[32,32], iconAnchor:[16,16], className:'' });
 
+/* ── AUTOCOMPLETE ─────────────────────────────────────────── */
+let _suggestTimer = null;
+async function searchAddress(value, suggId) {
+  clearTimeout(_suggestTimer);
+  const el = document.getElementById(suggId);
+  if (value.length < 3) { el.style.display = 'none'; return; }
+  _suggestTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value)}&format=json&limit=5&countrycodes=br&accept-language=pt`, { headers: { 'User-Agent': 'TRAMPO-App/1.0' } });
+      const data = await r.json();
+      if (!data.length) { el.style.display = 'none'; return; }
+      el.innerHTML = data.map(d => `
+        <div onclick="selectAddress('${d.display_name.replace(/'/g, "\\'")}', '${suggId}')"
+             style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--gray-100)"
+             onmouseover="this.style.background='var(--green-light)'"
+             onmouseout="this.style.background='white'">
+          📍 ${d.display_name.slice(0, 60)}...
+        </div>`).join('');
+      el.style.display = 'block';
+    } catch(e) {}
+  }, 400);
+}
+function selectAddress(addr, suggId) {
+  const inputId = suggId === 'dest-suggestions' ? 'destination' : 'origin';
+  document.getElementById(inputId).value = addr;
+  document.getElementById(suggId).style.display = 'none';
+}
+document.addEventListener('click', (e) => {
+  document.getElementById('origin-suggestions').style.display = 'none';
+  document.getElementById('dest-suggestions').style.display = 'none';
+});
+
 /* ── Geocodificação ──────────────────────────────────────── */
 async function geocode(address) {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=br`;
@@ -274,7 +311,6 @@ function renderRideButtons(distKm, fromLat, fromLon, toLat, toLon, originTxt, de
   const uberX   = Math.round(distKm * 3.2 + 5);
   const pop99   = Math.round(distKm * 1.8 + 4);
 
-  // Deep links — abrem o app se instalado, senão abre o site
   const uberLink = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${fromLat}&pickup[longitude]=${fromLon}&dropoff[latitude]=${toLat}&dropoff[longitude]=${toLon}&dropoff[nickname]=${encodeURIComponent(destTxt)}`;
   const link99   = `https://99app.com/corrida?origin=${encodeURIComponent(originTxt)}&destination=${encodeURIComponent(destTxt)}`;
 
