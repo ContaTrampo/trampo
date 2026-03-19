@@ -1,4 +1,4 @@
-"""TRAMPO v7 — Rotas de Candidatos"""
+"""TRAMPO v7 — Rotas de Candidatos (com upload de foto)"""
 import os
 from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -9,10 +9,10 @@ from models import User, CandidateProfile, Application
 candidates_bp = Blueprint("candidates", __name__, url_prefix="/api/candidates")
 
 ALLOWED_EXT = {"pdf"}
+ALLOWED_IMAGE_EXT = {"png", "jpg", "jpeg", "gif"}
 
-def _allowed(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
-
+def _allowed(filename: str, allowed_set) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed_set
 
 # ── Perfil ────────────────────────────────────────────────────
 
@@ -65,6 +65,44 @@ def update_profile():
     return jsonify({"message": "Perfil atualizado! ✅", "profile": profile.to_dict()}), 200
 
 
+# ── Upload de foto de perfil ───────────────────────────────────
+
+@candidates_bp.route("/photo", methods=["POST"])
+@jwt_required()
+def upload_photo():
+    user_id = int(get_jwt_identity())
+    if "photo" not in request.files:
+        return jsonify({"error": "Nenhuma imagem enviada"}), 400
+
+    file = request.files["photo"]
+    if file.filename == "" or not _allowed(file.filename, ALLOWED_IMAGE_EXT):
+        return jsonify({"error": "Arquivo inválido. Envie PNG, JPG ou JPEG."}), 400
+
+    # Limite de 2MB (já verificado no frontend, mas reforça)
+    if file.content_length and file.content_length > 2 * 1024 * 1024:
+        return jsonify({"error": "Imagem muito grande (máx 2MB)"}), 400
+
+    ext = file.filename.rsplit(".", 1)[1].lower()
+    filename = secure_filename(f"photo_{user_id}.{ext}")
+    upload_dir = current_app.config["UPLOAD_FOLDER"]  # mesma pasta de currículos
+    os.makedirs(upload_dir, exist_ok=True)
+    filepath = os.path.join(upload_dir, filename)
+    file.save(filepath)
+
+    # Gera URL pública (ajuste conforme sua estrutura)
+    photo_url = f"/uploads/{filename}"  # ou use request.host_url
+
+    # Salva no perfil do candidato
+    profile = CandidateProfile.query.filter_by(user_id=user_id).first()
+    if not profile:
+        profile = CandidateProfile(user_id=user_id)
+        db.session.add(profile)
+    profile.photo_url = photo_url
+    db.session.commit()
+
+    return jsonify({"message": "Foto atualizada! ✅", "photo_url": photo_url}), 200
+
+
 # ── Upload de currículo ───────────────────────────────────────
 
 @candidates_bp.route("/resume/upload", methods=["POST"])
@@ -75,7 +113,7 @@ def upload_resume():
         return jsonify({"error": "Nenhum arquivo enviado"}), 400
 
     file = request.files["resume"]
-    if file.filename == "" or not _allowed(file.filename):
+    if file.filename == "" or not _allowed(file.filename, ALLOWED_EXT):
         return jsonify({"error": "Arquivo inválido. Envie um PDF."}), 400
 
     filename = secure_filename(f"resume_{user_id}.pdf")
