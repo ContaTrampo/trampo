@@ -482,6 +482,10 @@ def run_full_scrape() -> dict:
     # 5. The Muse — fallback internacional
     all_jobs.extend(fetch_themuse_jobs(query="developer", max_results=20))
 
+    # 7. SerpAPI — Google Jobs (vagas com descrição completa)
+    all_jobs.extend(fetch_serpapi_jobs())
+    time.sleep(1)
+  
     total_saved = save_jobs_to_db(all_jobs)
     result = {
         "total_fetched": len(all_jobs),
