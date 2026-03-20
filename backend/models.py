@@ -1,6 +1,7 @@
-"""TRAMPO v7 — Modelos de Dados"""
+"""TRAMPO v8 — Modelos de Dados"""
 from datetime import datetime, date, timezone
 from database import db
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class User(db.Model):
@@ -9,15 +10,13 @@ class User(db.Model):
     name             = db.Column(db.String(100), nullable=False)
     email            = db.Column(db.String(150), unique=True, nullable=False, index=True)
     password_hash    = db.Column(db.String(255), nullable=False)
-    role             = db.Column(db.String(20), default="candidate")  # candidate|recruiter|admin
+    role             = db.Column(db.String(20), default="candidate")
 
-    # Dados pessoais
     cpf              = db.Column(db.String(14), unique=True, nullable=True, index=True)
     phone            = db.Column(db.String(20), nullable=True)
-    sexo             = db.Column(db.String(1), nullable=True)   # M|F|O
+    sexo             = db.Column(db.String(1), nullable=True)
     birth_date       = db.Column(db.Date, nullable=True)
 
-    # Endereço
     cep              = db.Column(db.String(10), nullable=True)
     logradouro       = db.Column(db.String(200), nullable=True)
     numero           = db.Column(db.String(20), nullable=True)
@@ -26,35 +25,37 @@ class User(db.Model):
     cidade           = db.Column(db.String(100), nullable=True)
     estado           = db.Column(db.String(2), nullable=True)
 
-    # Email verification
     email_verified              = db.Column(db.Boolean, default=False)
     email_verification_token    = db.Column(db.String(128), nullable=True, index=True)
     email_verification_expires  = db.Column(db.DateTime, nullable=True)
 
-    # Password reset
     password_reset_token        = db.Column(db.String(128), nullable=True, index=True)
     password_reset_expires      = db.Column(db.DateTime, nullable=True)
 
-    # Premium
     is_premium          = db.Column(db.Boolean, default=False)
     premium_expires_at  = db.Column(db.DateTime, nullable=True)
 
-    # Stripe
     stripe_customer_id      = db.Column(db.String(100), nullable=True)
     stripe_subscription_id  = db.Column(db.String(100), nullable=True)
 
-    # Limites diários
     daily_sends_used  = db.Column(db.Integer, default=0)
     last_reset_date   = db.Column(db.Date, default=date.today)
 
     email_notifications = db.Column(db.Boolean, default=True)
     created_at          = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    # Relacionamentos
-    profile      = db.relationship("CandidateProfile", backref="user", uselist=False, cascade="all, delete-orphan")
-    applications = db.relationship("Application", backref="user", lazy=True, cascade="all, delete-orphan")
-    jobs         = db.relationship("Job", backref="recruiter", lazy=True, foreign_keys="Job.recruiter_id")
+    profile          = db.relationship("CandidateProfile", backref="user", uselist=False, cascade="all, delete-orphan")
+    applications     = db.relationship("Application", backref="user", lazy=True, cascade="all, delete-orphan")
+    jobs             = db.relationship("Job", backref="recruiter", lazy=True, foreign_keys="Job.recruiter_id")
     reviews_received = db.relationship("Review", foreign_keys="Review.candidate_id", backref="candidate", lazy=True)
+
+    def set_password(self, password: str) -> None:
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
 
     def get_daily_limit(self) -> int:
         return 30 if self.is_premium else 5
@@ -102,24 +103,24 @@ class CandidateProfile(db.Model):
     user_id          = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True, index=True)
     job_title        = db.Column(db.String(100), nullable=True)
     years_experience = db.Column(db.Integer, default=0)
-    seniority        = db.Column(db.String(30), nullable=True)   # junior|mid|senior|lead
+    seniority        = db.Column(db.String(30), nullable=True)
     salary_min       = db.Column(db.Integer, nullable=True)
     salary_max       = db.Column(db.Integer, nullable=True)
     availability     = db.Column(db.String(30), default="immediate")
-    work_mode        = db.Column(db.String(30), default="any")   # remote|hybrid|onsite|any
+    work_mode        = db.Column(db.String(30), default="any")
     bio              = db.Column(db.Text, nullable=True)
-    skills           = db.Column(db.Text, nullable=True)         # CSV: "Python, React, AWS"
+    skills           = db.Column(db.Text, nullable=True)
     linkedin_url     = db.Column(db.String(300), nullable=True)
     github_url       = db.Column(db.String(300), nullable=True)
     portfolio_url    = db.Column(db.String(300), nullable=True)
     whatsapp         = db.Column(db.String(20), nullable=True)
     resume_filename  = db.Column(db.String(255), nullable=True)
     resume_text      = db.Column(db.Text, nullable=True)
-
-    # Avaliação média (calculada)
+    photo_url        = db.Column(db.String(500), nullable=True)
+    location         = db.Column(db.String(200), nullable=True)
+    education        = db.Column(db.String(100), nullable=True)
     avg_rating       = db.Column(db.Float, default=0.0)
     rating_count     = db.Column(db.Integer, default=0)
-
     created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def get_skills_list(self) -> list:
@@ -143,6 +144,9 @@ class CandidateProfile(db.Model):
             "github_url":       self.github_url,
             "portfolio_url":    self.portfolio_url,
             "whatsapp":         self.whatsapp,
+            "photo_url":        self.photo_url,
+            "location":         self.location,
+            "education":        self.education,
             "has_resume":       self.resume_filename is not None,
             "avg_rating":       round(self.avg_rating, 1),
             "rating_count":     self.rating_count,
@@ -181,7 +185,7 @@ class Job(db.Model):
     estado              = db.Column(db.String(2), nullable=True)
     latitude            = db.Column(db.Float, nullable=True)
     longitude           = db.Column(db.Float, nullable=True)
-    contract_type       = db.Column(db.String(20), default="clt")  # clt|pj|freelancer|internship
+    contract_type       = db.Column(db.String(20), default="clt")
     salary_min          = db.Column(db.Integer, nullable=True)
     salary_max          = db.Column(db.Integer, nullable=True)
     work_mode           = db.Column(db.String(20), default="onsite")
@@ -189,12 +193,12 @@ class Job(db.Model):
     required_experience = db.Column(db.Integer, default=0)
     contact_email       = db.Column(db.String(150), nullable=True)
     contact_whatsapp    = db.Column(db.String(20), nullable=True)
-    source_url          = db.Column(db.String(500), nullable=True)  # URL original (scraping)
+    source_url          = db.Column(db.String(500), nullable=True)
     benefits            = db.Column(db.Text, nullable=True)
-    status              = db.Column(db.String(20), default="active")  # active|closed|pending_payment
-    source              = db.Column(db.String(50), default="manual")  # manual|scraped
-    payment_intent_id   = db.Column(db.String(100), nullable=True)    # Stripe payment
-    is_paid             = db.Column(db.Boolean, default=False)        # R$50 pago
+    status              = db.Column(db.String(20), default="active")
+    source              = db.Column(db.String(50), default="manual")
+    payment_intent_id   = db.Column(db.String(100), nullable=True)
+    is_paid             = db.Column(db.Boolean, default=False)
     is_featured         = db.Column(db.Boolean, default=False)
     posted_at           = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -243,7 +247,7 @@ class Application(db.Model):
     cover_letter    = db.Column(db.Text, nullable=True)
     email_sent_to   = db.Column(db.String(150), nullable=True)
     status          = db.Column(db.String(30), default="sent")
-    is_featured     = db.Column(db.Boolean, default=False)  # candidatura destacada (premium)
+    is_featured     = db.Column(db.Boolean, default=False)
     sent_at         = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     viewed_at       = db.Column(db.DateTime, nullable=True)
     responded_at    = db.Column(db.DateTime, nullable=True)
@@ -263,13 +267,12 @@ class Application(db.Model):
 
 
 class Review(db.Model):
-    """Avaliação de candidato por recrutador (pós entrevista)"""
     __tablename__ = "reviews"
     id           = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     reviewer_id  = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     job_id       = db.Column(db.Integer, db.ForeignKey("jobs.id"), nullable=True)
-    rating       = db.Column(db.Integer, nullable=False)    # 1-5
+    rating       = db.Column(db.Integer, nullable=False)
     comment      = db.Column(db.Text, nullable=True)
     is_public    = db.Column(db.Boolean, default=True)
     created_at   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
