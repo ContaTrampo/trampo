@@ -11,12 +11,31 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(ActiveConfig)
 
+    # Pool de conexão robusto para evitar SSL EOF
+    db_url = os.environ.get("DATABASE_URL", "sqlite:///trampo.db")
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    if db_url.startswith("postgresql"):
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "pool_pre_ping":    True,
+            "pool_recycle":     300,
+            "pool_size":        5,
+            "max_overflow":     2,
+            "connect_args":     {
+                "sslmode":        "require",
+                "connect_timeout": 10,
+            },
+        }
+    else:
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "pool_pre_ping": True,
+        }
+
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
     db.init_app(app)
     JWTManager(app)
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-    # ── Blueprints ──────────────────────────────────────────────
     from routes.auth         import auth_bp
     from routes.candidates   import candidates_bp
     from routes.recruiters   import recruiters_bp
@@ -34,12 +53,10 @@ def create_app():
                routes_bp, matching_bp, admin_bp, reviews_bp):
         app.register_blueprint(bp)
 
-    # ── Health ────────────────────────────────────────────────
     @app.route("/api/health")
     def health():
         return jsonify({"status": "ok", "version": "8.0"}), 200
 
-    # ── Error handlers ────────────────────────────────────────
     @app.errorhandler(404)
     def not_found(e):
         if request.path.startswith("/api/"):
@@ -56,7 +73,6 @@ def create_app():
         db.session.rollback()
         return jsonify({"error": "Erro interno do servidor"}), 500
 
-    # ── Frontend estático ─────────────────────────────────────
     frontend = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
     @app.route("/")
@@ -69,12 +85,10 @@ def create_app():
             return jsonify({"error": "Rota não encontrada"}), 404
         return send_from_directory(frontend, filename)
 
-    # ── Bootstrap DB ──────────────────────────────────────────
     with app.app_context():
         db.create_all()
         _seed_demo_jobs()
 
-    # ── Agendamento automático de scraping ────────────────────
     if os.environ.get("FLASK_ENV") == "production":
         try:
             from apscheduler.schedulers.background import BackgroundScheduler
@@ -86,12 +100,7 @@ def create_app():
                     result = run_full_scrape()
                     print(f"✅ Scraping automático: {result}")
 
-            scheduler.add_job(
-                scheduled_scrape,
-                trigger="cron",
-                hour=6,
-                minute=0,
-            )
+            scheduler.add_job(scheduled_scrape, trigger="cron", hour=6, minute=0)
             scheduler.start()
             print("⏰ Scraping automático agendado para 06:00h")
         except Exception as e:
@@ -126,24 +135,14 @@ def _seed_demo_jobs():
             {"title": "Analista de Marketing Digital", "company": "Agência Digital BA",
              "description": "Gestão de redes sociais, campanhas Google Ads e Meta Ads.",
              "location": "Salvador, BA", "cidade": "Salvador", "estado": "BA",
-             "latitude": -12.9714, "longitude": -38.5014,
              "work_mode": "hybrid", "contract_type": "clt",
              "salary_min": 3500, "salary_max": 6000,
              "required_skills": "Google Ads, Meta Ads, SEO, Analytics, Canva",
              "required_experience": 2, "contact_email": "rh@agenciadigital.com.br",
              "is_paid": True},
-            {"title": "DevOps Engineer", "company": "CloudBR",
-             "description": "Infra em AWS, CI/CD, Kubernetes e Terraform. 100% remoto.",
-             "location": "Remoto", "cidade": "Salvador", "estado": "BA",
-             "work_mode": "remote", "contract_type": "pj",
-             "salary_min": 12000, "salary_max": 20000,
-             "required_skills": "AWS, Docker, Kubernetes, Terraform, Linux",
-             "required_experience": 4, "contact_email": "hr@cloudbr.io",
-             "is_paid": True},
             {"title": "Assistente Administrativo", "company": "Escritório Salvador",
              "description": "Organização de documentos, atendimento ao cliente.",
              "location": "Salvador, BA", "cidade": "Salvador", "estado": "BA",
-             "latitude": -12.9714, "longitude": -38.5014,
              "work_mode": "onsite", "contract_type": "clt",
              "salary_min": 1800, "salary_max": 2500,
              "required_skills": "Excel, Word, Organização, Atendimento",
@@ -152,7 +151,6 @@ def _seed_demo_jobs():
             {"title": "Data Scientist", "company": "Analytics BR",
              "description": "Modelos de machine learning e análise de dados.",
              "location": "São Paulo, SP", "cidade": "São Paulo", "estado": "SP",
-             "latitude": -23.5505, "longitude": -46.6333,
              "work_mode": "hybrid", "contract_type": "clt",
              "salary_min": 9000, "salary_max": 15000,
              "required_skills": "Python, Pandas, Scikit-learn, SQL, Tableau",
@@ -166,10 +164,17 @@ def _seed_demo_jobs():
              "required_skills": "Figma, UX Research, UI Design, Prototyping",
              "required_experience": 2, "contact_email": "designers@designco.com.br",
              "is_paid": True},
+            {"title": "DevOps Engineer", "company": "CloudBR",
+             "description": "Infra em AWS, CI/CD, Kubernetes e Terraform. 100% remoto.",
+             "location": "Remoto", "cidade": "Salvador", "estado": "BA",
+             "work_mode": "remote", "contract_type": "pj",
+             "salary_min": 12000, "salary_max": 20000,
+             "required_skills": "AWS, Docker, Kubernetes, Terraform, Linux",
+             "required_experience": 4, "contact_email": "hr@cloudbr.io",
+             "is_paid": True},
             {"title": "Analista de Dados Jr.", "company": "iFood",
              "description": "SQL, Python e dashboards no Power BI.",
              "location": "Osasco, SP", "cidade": "Osasco", "estado": "SP",
-             "latitude": -23.5329, "longitude": -46.7919,
              "work_mode": "hybrid", "contract_type": "clt",
              "salary_min": 4000, "salary_max": 7000,
              "required_skills": "SQL, Python, Excel, Power BI",
