@@ -426,7 +426,67 @@
     </form>
   </div>
 </div>
+<script>
+async function loadHomeJobs() {
+  try {
+    const resp = await fetch('https://trampo-api-9nux.onrender.com/api/jobs/?per_page=6&status=active');
+    const data = await resp.json();
+    const grid = document.getElementById('jobsGrid');
+    const jobs = data.jobs || data.items || [];
 
+    if (!jobs.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray-500)">Vagas sendo carregadas... volte em instantes.</div>';
+      return;
+    }
+
+    const modeIcon = { remote:'🏠', hybrid:'🔄', onsite:'🏢' };
+    grid.innerHTML = jobs.map(job => {
+      const initials = job.company.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const salary = job.salary_min
+        ? `R$ ${Number(job.salary_min).toLocaleString('pt-BR')}${job.salary_max?' – R$ '+Number(job.salary_max).toLocaleString('pt-BR'):''}`
+        : 'A combinar';
+      const tags = [
+        job.contract_type ? `<span class="job-tag">${job.contract_type.toUpperCase()}</span>` : '',
+        job.work_mode && job.work_mode !== 'onsite' ? `<span class="job-tag">${modeIcon[job.work_mode]||''} ${job.work_mode==='remote'?'Remoto':'Híbrido'}</span>` : '',
+        job.cidade ? `<span class="job-tag">📍 ${job.cidade}</span>` : '',
+      ].filter(Boolean).join('');
+
+      return `
+        <div class="job-card fade-in" style="cursor:pointer" onclick="window.location.href='pages/dispatch.html'">
+          <div class="job-card-header">
+            <div class="job-logo">${initials}</div>
+            <div>
+              <h4>${job.title}</h4>
+              <div class="job-company">${job.company}</div>
+            </div>
+          </div>
+          <div class="job-tags">${tags}</div>
+          <div class="job-salary">${salary}</div>
+          <div class="job-card-footer">
+            <span class="job-location">📍 ${job.cidade || job.location || 'Brasil'}</span>
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();window.location.href='pages/dispatch.html'">Ver vaga</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Reinicia animações fade-in
+    document.querySelectorAll('.fade-in').forEach(el => {
+      el.classList.remove('visible');
+      setTimeout(() => el.classList.add('visible'), 100);
+    });
+
+    // Atualiza contador de vagas
+    const counter = document.querySelector('[data-target="1876"]');
+    if (counter && data.total) {
+      counter.dataset.target = data.total;
+    }
+
+  } catch(e) {
+    console.log('Vagas:', e);
+  }
+}
+document.addEventListener('DOMContentLoaded', loadHomeJobs);
+</script>
 <script src="js/main.js"></script>
 <script src="./js/radio-bar.js"></script>
 </body>
