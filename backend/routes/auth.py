@@ -2,16 +2,13 @@
 import os, secrets
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import (
-    create_access_token, jwt_required, get_jwt_identity
-)
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from database import db
 from models import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
-# ── Registro ──────────────────────────────────────────────────
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data     = request.get_json() or {}
@@ -50,37 +47,45 @@ def register():
     }), 201
 
 
-# ── Login ─────────────────────────────────────────────────────
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data     = request.get_json() or {}
     email    = (data.get("email") or "").strip().lower()
     password = (data.get("password") or "")
 
-    user = User.query.filter_by(email=email).first()
-    if not user or not user.check_password(password):
-        return jsonify({"error": "Email ou senha incorretos"}), 401
+    if not email or not password:
+        return jsonify({"error": "Email e senha são obrigatórios"}), 400
 
-    token = create_access_token(identity=str(user.id))
-    return jsonify({
-        "message": "Login realizado! ✅",
-        "token":   token,
-        "user":    user.to_dict(),
-    }), 200
+    try:
+        user = User.query.filter_by(email=email).first()
+        if not user or not user.check_password(password):
+            return jsonify({"error": "Email ou senha incorretos"}), 401
+
+        token = create_access_token(identity=str(user.id))
+        return jsonify({
+            "message": "Login realizado! ✅",
+            "token":   token,
+            "user":    user.to_dict(),
+        }), 200
+    except Exception as e:
+        print(f"❌ Erro no login: {e}")
+        return jsonify({"error": "Erro interno. Tente novamente."}), 500
 
 
-# ── Meu perfil ────────────────────────────────────────────────
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required()
 def me():
-    user_id = int(get_jwt_identity())
-    user    = db.session.get(User, user_id)
-    if not user:
-        return jsonify({"error": "Usuário não encontrado"}), 404
-    return jsonify({"user": user.to_dict()}), 200
+    try:
+        user_id = int(get_jwt_identity())
+        user    = db.session.get(User, user_id)
+        if not user:
+            return jsonify({"error": "Usuário não encontrado"}), 404
+        return jsonify({"user": user.to_dict()}), 200
+    except Exception as e:
+        print(f"❌ Erro /me: {e}")
+        return jsonify({"error": "Erro interno"}), 500
 
 
-# ── Esqueci a senha ───────────────────────────────────────────
 @auth_bp.route("/forgot-password", methods=["POST"])
 def forgot_password():
     data  = request.get_json() or {}
@@ -91,16 +96,16 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
 
-    # Sempre retorna sucesso (segurança — não revela se email existe)
     if not user:
+        # Segurança — não revela se email existe
         return jsonify({"message": "Se este email existir, você receberá um link em breve."}), 200
 
-    # Gera token seguro com validade de 2 horas
+    # Usa os campos corretos do models.py
     token  = secrets.token_urlsafe(32)
     expiry = datetime.now(timezone.utc) + timedelta(hours=2)
 
-    user.reset_token        = token
-    user.reset_token_expiry = expiry
+    user.password_reset_token   = token
+    user.password_reset_expires = expiry
     db.session.commit()
 
     try:
@@ -113,7 +118,6 @@ def forgot_password():
     return jsonify({"message": "Link de recuperação enviado! Verifique seu email. ✅"}), 200
 
 
-# ── Redefinir senha ───────────────────────────────────────────
 @auth_bp.route("/reset-password", methods=["POST"])
 def reset_password():
     data         = request.get_json() or {}
@@ -125,48 +129,51 @@ def reset_password():
     if len(new_password) < 6:
         return jsonify({"error": "Senha precisa ter pelo menos 6 caracteres"}), 400
 
-    user = User.query.filter_by(reset_token=token).first()
+    # Usa os campos corretos do models.py
+    user = User.query.filter_by(password_reset_token=token).first()
 
     if not user:
         return jsonify({"error": "Token inválido"}), 400
 
-    # Verifica se não expirou
-    if user.reset_token_expiry:
-        expiry = user.reset_token_expiry
+    # Verifica expiração
+    if user.password_reset_expires:
+        expiry = user.password_reset_expires
         if expiry.tzinfo is None:
             expiry = expiry.replace(tzinfo=timezone.utc)
         if datetime.now(timezone.utc) > expiry:
             return jsonify({"error": "Token expirado. Solicite um novo link."}), 400
 
     user.set_password(new_password)
-    user.reset_token        = None
-    user.reset_token_expiry = None
+    user.password_reset_token   = None
+    user.password_reset_expires = None
     db.session.commit()
 
     return jsonify({"message": "Senha redefinida com sucesso! ✅"}), 200
 
 
-# ── Alterar senha (logado) ────────────────────────────────────
 @auth_bp.route("/change-password", methods=["POST"])
 @jwt_required()
 def change_password():
-    user_id      = int(get_jwt_identity())
-    user         = db.session.get(User, user_id)
-    data         = request.get_json() or {}
-    current_pass = data.get("current_password", "")
-    new_pass     = data.get("new_password", "")
+    try:
+        user_id      = int(get_jwt_identity())
+        user         = db.session.get(User, user_id)
+        data         = request.get_json() or {}
+        current_pass = data.get("current_password", "")
+        new_pass     = data.get("new_password", "")
 
-    if not user.check_password(current_pass):
-        return jsonify({"error": "Senha atual incorreta"}), 400
-    if len(new_pass) < 6:
-        return jsonify({"error": "Nova senha precisa ter pelo menos 6 caracteres"}), 400
+        if not user.check_password(current_pass):
+            return jsonify({"error": "Senha atual incorreta"}), 400
+        if len(new_pass) < 6:
+            return jsonify({"error": "Nova senha precisa ter pelo menos 6 caracteres"}), 400
 
-    user.set_password(new_pass)
-    db.session.commit()
-    return jsonify({"message": "Senha alterada com sucesso! ✅"}), 200
+        user.set_password(new_pass)
+        db.session.commit()
+        return jsonify({"message": "Senha alterada com sucesso! ✅"}), 200
+    except Exception as e:
+        print(f"❌ Erro change-password: {e}")
+        return jsonify({"error": "Erro interno"}), 500
 
 
-# ── Testar email ──────────────────────────────────────────────
 @auth_bp.route("/test-email", methods=["GET"])
 def test_email():
     try:
@@ -183,7 +190,7 @@ def test_email():
             html    = html,
         )
         if ok:
-            return jsonify({"enviado": True,  "para": os.environ.get("MAIL_USERNAME")}), 200
+            return jsonify({"enviado": True, "para": os.environ.get("MAIL_USERNAME")}), 200
         else:
             return jsonify({"enviado": False, "dica": "Verifique os logs do Render"}), 500
     except Exception as e:
