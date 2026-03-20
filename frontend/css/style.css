@@ -156,10 +156,12 @@ input, textarea, select { font-family: 'Nunito', sans-serif; }
   box-shadow: var(--shadow);
 }
 .nav {
-  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 68px;
+  gap: 12px;
+  overflow: visible;
 }
 .nav-logo {
   font-family: 'Syne', sans-serif;
@@ -175,17 +177,29 @@ input, textarea, select { font-family: 'Nunito', sans-serif; }
   gap: 8px;
   list-style: none;
 }
-.nav-links a {
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--gray-700);
-  transition: var(--transition);
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  flex-wrap: nowrap;
 }
-.nav-links a:hover, .nav-links a.active {
+
+.nav-links a {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all .2s;
+  white-space: nowrap;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--green);
   background: var(--green-light);
-  color: var(--green-dark);
 }
 .nav-auth {
   display: flex;
