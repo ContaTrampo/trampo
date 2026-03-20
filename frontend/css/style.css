@@ -1102,3 +1102,44 @@ tbody tr:hover { background: var(--gray-50); }
   .hero-cta { flex-direction: column; }
   .hero-cta .btn { width: 100%; }
 }
+/* Nav compacto para caber tudo */
+.nav-logo {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: var(--navy);
+}
+.nav-logo span { color: var(--green); }
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .nav-links { display: none; }
+  .nav-links.open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.1);
+    z-index: 999;
+    gap: 4px;
+  }
+}
