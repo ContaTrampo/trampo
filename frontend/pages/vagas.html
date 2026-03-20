@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vagas — TRAMPO</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .filter-card{background:white;border-radius:16px;padding:24px;border:1.5px solid var(--gray-100);margin-bottom:16px}
+    .filter-label{font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block}
+    .filter-select{width:100%;padding:9px 12px;border:1.5px solid var(--gray-100);border-radius:10px;font-size:13px;color:var(--gray-700);background:white;cursor:pointer}
+    .filter-select:focus{outline:none;border-color:var(--green)}
+    .filter-input{width:100%;padding:9px 12px;border:1.5px solid var(--gray-100);border-radius:10px;font-size:13px;color:var(--gray-700)}
+    .filter-input:focus{outline:none;border-color:var(--green)}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-100);background:white;color:var(--gray-600);transition:.15s;user-select:none}
+    .chip:hover,.chip.active{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
+    .job-list-item{background:white;border:1.5px solid var(--gray-100);border-radius:14px;padding:20px 24px;margin-bottom:12px;cursor:pointer;transition:.15s;display:flex;gap:16px;align-items:flex-start}
+    .job-list-item:hover{border-color:var(--green);box-shadow:0 4px 16px rgba(0,200,83,.1)}
+    .jli-logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--green),#059669);color:white;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .jli-body{flex:1;min-width:0}
+    .jli-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .jli-company{font-size:13px;color:var(--gray-500);margin-bottom:10px}
+    .jli-tags{display:flex;flex-wrap:wrap;gap:6px}
+    .jli-tag{font-size:11px;padding:3px 9px;border-radius:6px;background:var(--gray-50);color:var(--gray-600);font-weight:500}
+    .jli-salary{font-size:14px;font-weight:700;color:var(--green);white-space:nowrap;flex-shrink:0;margin-top:4px}
+    .pagination{display:flex;gap:8px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+    .page-btn{padding:8px 14px;border-radius:10px;border:1.5px solid var(--gray-100);background:white;cursor:pointer;font-size:13px;font-weight:600;color:var(--gray-600);transition:.15s}
+    .page-btn:hover,.page-btn.active{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
+    .results-count{font-size:13px;color:var(--gray-500);margin-bottom:16px}
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <nav class="nav container">
+    <a href="../index.html" class="nav-logo">TRAMP<span>O</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="../index.html">Início</a></li>
+      <li><a href="vagas.html" class="active">Vagas</a></li>
+      <li><a href="dispatch.html">Disparar CV</a></li>
+      <li><a href="profile.html">Meu Perfil</a></li>
+      <li><a href="routes.html">Rotas</a></li>
+      <li><a href="premium.html">Premium 👑</a></li>
+      <li><a href="support.html">Suporte</a></li>
+    </ul>
+    <div class="nav-auth" id="navAuth">
+      <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Entrar</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Criar Conta</button>
+    </div>
+    <div class="nav-user hidden" id="navUser">
+      <span class="badge badge-free hidden" id="navBadge">Free</span>
+      <span style="font-size:14px;font-weight:600;color:var(--gray-700)" id="navName"></span>
+      <div class="avatar" id="navAvatar">?</div>
+      <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-700)" onclick="Auth.logout()">Sair</button>
+    </div>
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+  </nav>
+</header>
+
+<div class="page-header">
+  <div class="container">
+    <h1>🔍 Buscar Vagas</h1>
+    <p>Encontre oportunidades com filtros avançados</p>
+  </div>
+</div>
+
+<div class="container" style="padding:40px 0 100px">
+  <div style="display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start">
+
+    <!-- FILTROS -->
+    <div style="position:sticky;top:90px">
+
+      <div class="filter-card">
+        <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:20px">🎛️ Filtros</h3>
+
+        <!-- Busca por palavra-chave -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Cargo / Palavra-chave</label>
+          <input id="f-keyword" class="filter-input" placeholder="Ex: analista de marketing" oninput="debounceSearch()">
+        </div>
+
+        <!-- Localização -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Localização</label>
+          <input id="f-city" class="filter-input" placeholder="Cidade, estado ou 'remoto'" oninput="debounceSearch()">
+        </div>
+
+        <!-- Modalidade -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Modalidade</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="chip active" data-filter="mode" data-val="">Todas</span>
+            <span class="chip" data-filter="mode" data-val="remote">🏠 Remoto</span>
+            <span class="chip" data-filter="mode" data-val="hybrid">🔄 Híbrido</span>
+            <span class="chip" data-filter="mode" data-val="onsite">🏢 Presencial</span>
+          </div>
+        </div>
+
+        <!-- Tipo de contrato -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Tipo de Contrato</label>
+          <select id="f-contract" class="filter-select" onchange="loadJobs()">
+            <option value="">Todos</option>
+            <option value="clt">CLT</option>
+            <option value="pj">PJ</option>
+            <option value="internship">Estágio</option>
+            <option value="freelancer">Freelance</option>
+            <option value="temporary">Temporário</option>
+          </select>
+        </div>
+
+        <!-- Nível de experiência -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Nível de Experiência</label>
+          <select id="f-level" class="filter-select" onchange="loadJobs()">
+            <option value="">Todos os níveis</option>
+            <option value="internship">Estágio</option>
+            <option value="junior">Júnior</option>
+            <option value="mid">Pleno</option>
+            <option value="senior">Sênior</option>
+            <option value="lead">Gestão / Diretoria</option>
+          </select>
+        </div>
+
+        <!-- Data de publicação -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Data de Publicação</label>
+          <select id="f-date" class="filter-select" onchange="loadJobs()">
+            <option value="">Qualquer data</option>
+            <option value="1">Últimas 24 horas</option>
+            <option value="3">Últimos 3 dias</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Último mês</option>
+          </select>
+        </div>
+
+        <!-- Faixa salarial -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Salário mínimo (R$)</label>
+          <select id="f-salary" class="filter-select" onchange="loadJobs()">
+            <option value="">Qualquer salário</option>
+            <option value="1500">R$ 1.500+</option>
+            <option value="3000">R$ 3.000+</option>
+            <option value="5000">R$ 5.000+</option>
+            <option value="8000">R$ 8.000+</option>
+            <option value="12000">R$ 12.000+</option>
+          </select>
+        </div>
+
+        <!-- Setor -->
+        <div style="margin-bottom:16px">
+          <label class="filter-label">Setor / Indústria</label>
+          <select id="f-sector" class="filter-select" onchange="loadJobs()">
+            <option value="">Todos os setores</option>
+            <option value="tecnologia">Tecnologia</option>
+            <option value="saude">Saúde</option>
+            <option value="educacao">Educação</option>
+            <option value="financeiro">Financeiro</option>
+            <option value="varejo">Varejo / Comércio</option>
+            <option value="logistica">Logística</option>
+            <option value="marketing">Marketing</option>
+            <option value="construcao">Construção</option>
+            <option value="alimentacao">Alimentação</option>
+          </select>
+        </div>
+
+        <!-- Diversidade -->
+        <div style="margin-bottom:20px">
+          <label class="filter-label">Diversidade & Inclusão</label>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+              <input type="checkbox" id="f-pcd" onchange="loadJobs()"> Vagas para PCD
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+              <input type="checkbox" id="f-women" onchange="loadJobs()"> Vagas para mulheres
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+              <input type="checkbox" id="f-black" onchange="loadJobs()"> Vagas para negros
+            </label>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary btn-sm btn-block" onclick="clearFilters()">🔄 Limpar filtros</button>
+      </div>
+    </div>
+
+    <!-- LISTA DE VAGAS -->
+    <div>
+      <!-- Barra de busca rápida -->
+      <div style="display:flex;gap:12px;margin-bottom:20px">
+        <input id="f-search-top" class="form-input" style="flex:1" placeholder="🔍 Busca rápida por título ou empresa..." oninput="debounceSearch()">
+        <button class="btn btn-primary" onclick="loadJobs()">Buscar</button>
+      </div>
+
+      <div class="results-count" id="resultsCount">Carregando vagas...</div>
+
+      <div id="jobsList">
+        <div style="text-align:center;padding:60px 0;color:var(--gray-400)">
+          <div class="spinner spinner-green" style="margin:0 auto 16px;width:40px;height:40px;border-width:3px"></div>
+          <p>Buscando vagas...</p>
+        </div>
+      </div>
+
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES DA VAGA -->
+<div id="jobModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:3000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:white;border-radius:16px;padding:36px;max-width:620px;width:100%;max-height:85vh;overflow-y:auto;position:relative">
+    <button onclick="closeJobModal()" style="position:absolute;top:16px;right:16px;background:var(--gray-100);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+    <div id="jobModalContent"></div>
+  </div>
+</div>
+
+<!-- MODAL AUTH -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAuthModal()">✕</button>
+    <div class="modal-logo">TRAMP<span style="color:var(--green)">O</span></div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="login">Entrar</button>
+      <button class="modal-tab" data-tab="register">Criar Conta</button>
+    </div>
+    <form id="loginForm">
+      <div class="form-group"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-input" placeholder="seu@email.com" required></div>
+      <div class="form-group"><label class="form-label">Senha</label><input id="loginPassword" type="password" class="form-input" placeholder="••••••••" required></div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button>
+      <p style="text-align:right;margin-top:8px;font-size:13px"><a href="forgot-password.html" style="color:var(--green)">Esqueci minha senha</a></p>
+    </form>
+    <form id="registerForm" class="hidden">
+      <div class="form-group"><label class="form-label">Nome</label><input id="regName" type="text" class="form-input" required></div>
+      <div class="form-group"><label class="form-label">Email</label><input id="regEmail" type="email" class="form-input" required></div>
+      <div class="form-group"><label class="form-label">Senha</label><input id="regPassword" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required></div>
+      <div class="form-group"><label class="form-label">Sou um</label>
+        <select id="regRole" class="form-input form-select">
+          <option value="candidate">👤 Candidato</option>
+          <option value="recruiter">🏢 Recrutador</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Criar Conta 🚀</button>
+    </form>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script>
+let currentPage = 1;
+let totalPages  = 1;
+let _debounce   = null;
+let activeMode  = '';
+
+// Chips de modalidade
+document.querySelectorAll('.chip[data-filter="mode"]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip[data-filter="mode"]').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeMode = chip.dataset.val;
+    currentPage = 1;
+    loadJobs();
+  });
+});
+
+function debounceSearch() {
+  clearTimeout(_debounce);
+  _debounce = setTimeout(() => { currentPage = 1; loadJobs(); }, 400);
+}
+
+function getFilters() {
+  const keyword = (document.getElementById('f-keyword')?.value || document.getElementById('f-search-top')?.value || '').trim();
+  return {
+    q:             keyword,
+    city:          document.getElementById('f-city').value.trim(),
+    work_mode:     activeMode,
+    contract_type: document.getElementById('f-contract').value,
+    level:         document.getElementById('f-level').value,
+    days:          document.getElementById('f-date').value,
+    salary_min:    document.getElementById('f-salary').value,
+    sector:        document.getElementById('f-sector').value,
+    pcd:           document.getElementById('f-pcd').checked ? '1' : '',
+    page:          currentPage,
+    per_page:      10,
+    status:        'active',
+  };
+}
+
+async function loadJobs() {
+  document.getElementById('jobsList').innerHTML = `
+    <div style="text-align:center;padding:60px 0;color:var(--gray-400)">
+      <div class="spinner spinner-green" style="margin:0 auto 16px;width:40px;height:40px;border-width:3px"></div>
+      <p>Buscando vagas...</p>
+    </div>`;
+
+  try {
+    const f = getFilters();
+    const params = new URLSearchParams();
+    Object.entries(f).forEach(([k,v]) => { if (v !== '' && v !== null && v !== undefined) params.set(k, v); });
+
+    const resp = await fetch(`${API}/jobs/?${params.toString()}`);
+    const data = await resp.json();
+    const jobs = data.jobs || data.items || [];
+    const total = data.total || jobs.length;
+    totalPages  = data.pages || Math.ceil(total / 10) || 1;
+
+    document.getElementById('resultsCount').textContent =
+      total > 0 ? `${total.toLocaleString('pt-BR')} vaga${total !== 1 ? 's' : ''} encontrada${total !== 1 ? 's' : ''}` : 'Nenhuma vaga encontrada';
+
+    if (!jobs.length) {
+      document.getElementById('jobsList').innerHTML = `
+        <div style="text-align:center;padding:60px;color:var(--gray-500)">
+          <div style="font-size:48px;margin-bottom:16px">🔍</div>
+          <h3 style="color:var(--navy);margin-bottom:8px">Nenhuma vaga encontrada</h3>
+          <p>Tente ajustar os filtros ou buscar por outros termos.</p>
+        </div>`;
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    const modeLabel = { remote:'🏠 Remoto', hybrid:'🔄 Híbrido', onsite:'🏢 Presencial' };
+    const contractLabel = { clt:'CLT', pj:'PJ', internship:'Estágio', freelancer:'Freelance', temporary:'Temporário' };
+
+    document.getElementById('jobsList').innerHTML = jobs.map(job => {
+      const initials = (job.company||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const salary   = job.salary_min
+        ? `R$ ${Number(job.salary_min).toLocaleString('pt-BR')}${job.salary_max ? ' – R$ '+Number(job.salary_max).toLocaleString('pt-BR') : '+'}`
+        : '';
+      const tags = [
+        job.contract_type ? contractLabel[job.contract_type] || job.contract_type : '',
+        job.work_mode ? modeLabel[job.work_mode] || '' : '',
+        job.cidade || '',
+      ].filter(Boolean);
+
+      const daysAgo = job.posted_at
+        ? Math.floor((Date.now() - new Date(job.posted_at)) / 86400000)
+        : null;
+      const postedStr = daysAgo === 0 ? 'Hoje' : daysAgo === 1 ? 'Ontem' : daysAgo ? `${daysAgo} dias atrás` : '';
+
+      return `
+        <div class="job-list-item" onclick="openJobModal(${job.id})">
+          <div class="jli-logo">${initials}</div>
+          <div class="jli-body">
+            <div class="jli-title">${job.title}</div>
+            <div class="jli-company">${job.company}${postedStr ? ' · <span style="color:var(--green-dark)">' + postedStr + '</span>' : ''}</div>
+            <div class="jli-tags">
+              ${tags.map(t => `<span class="jli-tag">${t}</span>`).join('')}
+              ${job.required_skills ? job.required_skills.split(',').slice(0,3).map(s=>`<span class="jli-tag" style="background:var(--green-light);color:var(--green-dark)">${s.trim()}</span>`).join('') : ''}
+            </div>
+          </div>
+          ${salary ? `<div class="jli-salary">${salary}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    renderPagination();
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('jobsList').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--danger)">
+        Erro ao carregar vagas. Verifique sua conexão.
+      </div>`;
+  }
+}
+
+function renderPagination() {
+  if (totalPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+  let html = '';
+  if (currentPage > 1) html += `<button class="page-btn" onclick="goPage(${currentPage-1})">← Anterior</button>`;
+
+  const start = Math.max(1, currentPage - 2);
+  const end   = Math.min(totalPages, currentPage + 2);
+  for (let i = start; i <= end; i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+
+  if (currentPage < totalPages) html += `<button class="page-btn" onclick="goPage(${currentPage+1})">Próxima →</button>`;
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) {
+  currentPage = p;
+  loadJobs();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function openJobModal(jobId) {
+  const modal = document.getElementById('jobModal');
+  modal.style.display = 'flex';
+  document.getElementById('jobModalContent').innerHTML = `
+    <div style="text-align:center;padding:40px"><div class="spinner spinner-green" style="margin:auto"></div></div>`;
+
+  try {
+    const resp = await fetch(`${API}/jobs/${jobId}`);
+    const job  = await resp.json();
+
+    const salary = job.salary_min
+      ? `R$ ${Number(job.salary_min).toLocaleString('pt-BR')}${job.salary_max?' – R$ '+Number(job.salary_max).toLocaleString('pt-BR'):''}`
+      : 'A combinar';
+
+    document.getElementById('jobModalContent').innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${job.company}</div>
+      <h2 style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:16px">${job.title}</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+        ${job.cidade ? `<span class="jli-tag">📍 ${job.cidade}${job.estado?', '+job.estado:''}</span>` : ''}
+        <span class="jli-tag">${job.work_mode==='remote'?'🏠 Remoto':job.work_mode==='hybrid'?'🔄 Híbrido':'🏢 Presencial'}</span>
+        <span class="jli-tag">${(job.contract_type||'').toUpperCase()}</span>
+        <span class="jli-tag" style="background:var(--green-light);color:var(--green-dark);font-weight:700">💰 ${salary}</span>
+      </div>
+      ${job.required_skills ? `
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin-bottom:8px">HABILIDADES NECESSÁRIAS</div>
+          <div>${job.required_skills.split(',').map(s=>`<span class="jli-tag" style="margin:2px;display:inline-block">${s.trim()}</span>`).join('')}</div>
+        </div>` : ''}
+      <div style="font-size:14px;color:var(--gray-700);line-height:1.8;margin-bottom:20px;white-space:pre-line">${(job.description||'').slice(0,1500)}${job.description?.length>1500?'...':''}</div>
+      ${job.benefits ? `
+        <div style="background:var(--green-light);border-radius:12px;padding:16px;margin-bottom:20px">
+          <div style="font-size:12px;font-weight:700;color:var(--green-dark);margin-bottom:6px">BENEFÍCIOS</div>
+          <div style="font-size:14px;color:var(--gray-700)">${job.benefits}</div>
+        </div>` : ''}
+      <button class="btn btn-primary btn-lg btn-block" onclick="applyFromModal(${job.id}, this)">
+        🚀 Candidatar-me a esta vaga
+      </button>
+      ${job.source_url ? `<a href="${job.source_url}" target="_blank" class="btn btn-secondary btn-sm btn-block" style="margin-top:8px">🔗 Ver vaga no site original</a>` : ''}
+    `;
+  } catch(e) {
+    document.getElementById('jobModalContent').innerHTML = '<p style="color:var(--danger);text-align:center">Erro ao carregar detalhes da vaga.</p>';
+  }
+}
+
+function closeJobModal() {
+  document.getElementById('jobModal').style.display = 'none';
+}
+
+async function applyFromModal(jobId, btn) {
+  if (!Auth.isLoggedIn()) { closeJobModal(); openAuthModal('login'); return; }
+  setLoading(btn, true);
+  try {
+    const r = await post('/applications/', { job_id: jobId });
+    closeJobModal();
+    toast(r.message || '✅ Candidatura enviada!');
+  } catch(err) {
+    toast(err.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function clearFilters() {
+  document.getElementById('f-keyword').value   = '';
+  document.getElementById('f-search-top').value = '';
+  document.getElementById('f-city').value      = '';
+  document.getElementById('f-contract').value  = '';
+  document.getElementById('f-level').value     = '';
+  document.getElementById('f-date').value      = '';
+  document.getElementById('f-salary').value    = '';
+  document.getElementById('f-sector').value    = '';
+  document.getElementById('f-pcd').checked     = false;
+  document.getElementById('f-women').checked   = false;
+  document.getElementById('f-black').checked   = false;
+  activeMode = '';
+  document.querySelectorAll('.chip[data-filter="mode"]').forEach((c,i) => c.classList.toggle('active', i===0));
+  currentPage = 1;
+  loadJobs();
+}
+
+// Fecha modal clicando fora
+document.getElementById('jobModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('jobModal')) closeJobModal();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Pega parâmetros da URL (se vieram de outro lugar)
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('q'))    document.getElementById('f-keyword').value  = params.get('q');
+  if (params.get('city')) document.getElementById('f-city').value     = params.get('city');
+  loadJobs();
+});
+</script>
+
+<script src="../js/radio-bar.js"></script>
+</body>
+</html>
