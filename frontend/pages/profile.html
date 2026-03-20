@@ -36,7 +36,6 @@
     <!-- SIDEBAR PERFIL -->
     <div>
       <div class="card text-center" style="margin-bottom:20px">
-        <!-- Foto / Avatar com clique para upload -->
         <div style="text-align:center;margin-bottom:20px">
           <div id="profileAvatar" style="width:80px;height:80px;border-radius:50%;background:var(--green);color:white;font-size:28px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;cursor:pointer;overflow:hidden" onclick="document.getElementById('photoInput').click()">
             <span id="avatarInitials">?</span>
@@ -64,8 +63,8 @@
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('cvFile').click()">
           <div class="upload-icon" id="uploadIcon">📁</div>
           <h3 id="uploadTitle">Envie seu Currículo</h3>
-          <p id="uploadSub">PDF ou DOCX · Máx 5MB</p>
-          <input type="file" id="cvFile" accept=".pdf,.docx,.doc" style="display:none" onchange="handleFileUpload(this)">
+          <p id="uploadSub">PDF · Máx 5MB · IA preenche tudo</p>
+          <input type="file" id="cvFile" accept=".pdf" style="display:none" onchange="handleFileUpload(this)">
         </div>
         <button class="btn btn-primary btn-sm btn-block" style="margin-top:12px" onclick="document.getElementById('cvFile').click()">Selecionar Arquivo</button>
       </div>
@@ -86,7 +85,8 @@
           <div class="form-group"><label class="form-label">Localização</label><input id="location" class="form-input" placeholder="Ex: São Paulo, SP" oninput="calcCompletion()"></div>
           <div class="form-group"><label class="form-label">Pretensão Salarial (R$)</label>
             <div style="display:flex;gap:8px">
-              <input id="salaryMin" type="number" class="form-input" placeholder="Mínimo"><input id="salaryMax" type="number" class="form-input" placeholder="Máximo">
+              <input id="salaryMin" type="number" class="form-input" placeholder="Mínimo">
+              <input id="salaryMax" type="number" class="form-input" placeholder="Máximo">
             </div>
           </div>
           <div class="form-group"><label class="form-label">Disponibilidade</label>
@@ -103,7 +103,7 @@
             <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input type="radio" name="workMode" value="onsite"> 🏢 Presencial</label>
           </div>
         </div>
-        <div class="form-group"><label class="form-label">Skills / Tecnologias (separadas por vírgula)</label><input id="skills" class="form-input" placeholder="Ex: Python, Django, React, AWS, SQL" oninput="updateSkillBars();calcCompletion()"></div>
+        <div class="form-group"><label class="form-label">Habilidades / Tecnologias (separadas por vírgula)</label><input id="skills" class="form-input" placeholder="Ex: Python, Django, React, AWS, SQL" oninput="updateSkillBars();calcCompletion()"></div>
         <div class="form-group"><label class="form-label">Resumo Profissional</label><textarea id="bio" class="form-input" rows="4" placeholder="Fale sobre você, suas conquistas e objetivos profissionais..." oninput="calcCompletion()"></textarea></div>
         <div class="grid-2">
           <div class="form-group"><label class="form-label">LinkedIn</label><input id="linkedin" class="form-input" placeholder="linkedin.com/in/seuperfil"></div>
@@ -114,10 +114,10 @@
         <button class="btn btn-primary btn-lg" onclick="saveProfile()" id="saveBtn">💾 Salvar Perfil</button>
       </div>
 
-      <!-- SKILLS VISUAIS -->
+      <!-- HABILIDADES VISUAIS -->
       <div class="card" id="skillsCard">
         <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">🔧 Habilidades Detectadas</h3>
-        <div id="skillBars"><p style="color:var(--gray-500);font-size:14px">Preencha o campo de skills acima para visualizar.</p></div>
+        <div id="skillBars"><p style="color:var(--gray-500);font-size:14px">Envie seu currículo ou preencha o campo de habilidades acima para visualizar.</p></div>
       </div>
     </div>
   </div>
@@ -128,7 +128,7 @@
 
 <script src="../js/main.js"></script>
 <script>
-// Função de upload de foto
+
 async function uploadPhoto(file) {
   if (!file) return;
   if (file.size > 2 * 1024 * 1024) { toast('Foto muito grande (máx 2MB)', 'warning'); return; }
@@ -162,51 +162,50 @@ async function loadProfile() {
       document.getElementById('avatarInitials').textContent = initials;
       document.getElementById('profileName').textContent = user.name;
     }
-    // Se houver foto, exibe
     if (p?.photo_url) {
       document.getElementById('avatarImg').src = p.photo_url;
       document.getElementById('avatarImg').style.display = 'block';
       document.getElementById('avatarInitials').style.display = 'none';
     }
     if (p) {
-      document.getElementById('jobTitle').value = p.job_title||'';
-      document.getElementById('yearsExp').value = p.years_experience||'';
-      document.getElementById('seniority').value = p.seniority||'';
-      document.getElementById('location').value = p.location||'';
-      document.getElementById('salaryMin').value = p.salary_min||'';
-      document.getElementById('salaryMax').value = p.salary_max||'';
-      document.getElementById('skills').value = (p.skills||[]).join(', ');
-      document.getElementById('bio').value = p.bio||'';
-      document.getElementById('linkedin').value = p.linkedin_url||'';
-      document.getElementById('github').value = p.github_url||'';
-      document.getElementById('whatsapp').value = p.whatsapp||'';
-      document.getElementById('phone').value = p.phone||'';
-      document.getElementById('profileTitle').textContent = p.job_title||'—';
-      document.getElementById('profileLocation').textContent = '📍 ' + (p.location||'Localização não informada');
-      document.getElementById('profileExperience').textContent = '💼 ' + (p.years_experience||0) + ' anos de experiência';
+      document.getElementById('jobTitle').value    = p.job_title || '';
+      document.getElementById('yearsExp').value    = p.years_experience || '';
+      document.getElementById('seniority').value   = p.seniority || '';
+      document.getElementById('location').value    = p.location || '';
+      document.getElementById('salaryMin').value   = p.salary_min || '';
+      document.getElementById('salaryMax').value   = p.salary_max || '';
+      document.getElementById('skills').value      = Array.isArray(p.skills) ? p.skills.join(', ') : (p.skills || '');
+      document.getElementById('bio').value         = p.bio || '';
+      document.getElementById('linkedin').value    = p.linkedin_url || '';
+      document.getElementById('github').value      = p.github_url || '';
+      document.getElementById('whatsapp').value    = p.whatsapp || '';
+      document.getElementById('phone').value       = p.phone || '';
+      document.getElementById('profileTitle').textContent       = p.job_title || '—';
+      document.getElementById('profileLocation').textContent    = '📍 ' + (p.location || 'Localização não informada');
+      document.getElementById('profileExperience').textContent  = '💼 ' + (p.years_experience || 0) + ' anos de experiência';
       updateSkillBars();
       calcCompletion();
     }
-  } catch {}
+  } catch(e) { console.log('Erro ao carregar perfil:', e); }
 }
 
 function calcCompletion() {
   const fields = ['jobTitle','yearsExp','location','skills','bio'];
   const filled = fields.filter(f => document.getElementById(f)?.value?.trim()).length;
-  const pct = Math.round((filled/fields.length)*100);
-  document.getElementById('completionBar').style.width = pct+'%';
-  document.getElementById('completionText').textContent = pct+'% completo';
+  const pct = Math.round((filled / fields.length) * 100);
+  document.getElementById('completionBar').style.width = pct + '%';
+  document.getElementById('completionText').textContent = pct + '% completo';
 }
 
 function updateSkillBars() {
   const val = document.getElementById('skills').value;
   if (!val.trim()) return;
-  const skills = val.split(',').map(s=>s.trim()).filter(Boolean).slice(0,8);
-  const weights = [95,88,82,75,70,68,65,60];
-  document.getElementById('skillBars').innerHTML = skills.map((s,i)=>`
+  const skills  = val.split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
+  const weights = [95, 90, 85, 80, 75, 70, 68, 65, 62, 60];
+  document.getElementById('skillBars').innerHTML = skills.map((s, i) => `
     <div class="skill-item">
-      <div class="skill-header"><span>${s}</span><span>${weights[i]||60}%</span></div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${weights[i]||60}%"></div></div>
+      <div class="skill-header"><span>${s}</span><span>${weights[i] || 60}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${weights[i] || 60}%"></div></div>
     </div>
   `).join('');
 }
@@ -218,37 +217,75 @@ async function saveProfile() {
   const workMode = document.querySelector('input[name="workMode"]:checked')?.value || 'any';
   try {
     await put('/candidates/profile', {
-      job_title: document.getElementById('jobTitle').value,
-      years_experience: parseInt(document.getElementById('yearsExp').value)||0,
-      seniority: document.getElementById('seniority').value,
-      location: document.getElementById('location').value,
-      salary_min: parseInt(document.getElementById('salaryMin').value)||null,
-      salary_max: parseInt(document.getElementById('salaryMax').value)||null,
-      availability: document.getElementById('availability').value,
-      work_mode: workMode,
-      skills: document.getElementById('skills').value,
-      bio: document.getElementById('bio').value,
-      linkedin_url: document.getElementById('linkedin').value,
-      github_url: document.getElementById('github').value,
-      whatsapp: document.getElementById('whatsapp').value,
-      phone: document.getElementById('phone').value,
+      job_title:        document.getElementById('jobTitle').value,
+      years_experience: parseInt(document.getElementById('yearsExp').value) || 0,
+      seniority:        document.getElementById('seniority').value,
+      location:         document.getElementById('location').value,
+      salary_min:       parseInt(document.getElementById('salaryMin').value) || null,
+      salary_max:       parseInt(document.getElementById('salaryMax').value) || null,
+      availability:     document.getElementById('availability').value,
+      work_mode:        workMode,
+      skills:           document.getElementById('skills').value,
+      bio:              document.getElementById('bio').value,
+      linkedin_url:     document.getElementById('linkedin').value,
+      github_url:       document.getElementById('github').value,
+      whatsapp:         document.getElementById('whatsapp').value,
+      phone:            document.getElementById('phone').value,
     });
     toast('✅ Perfil salvo com sucesso!');
-    document.getElementById('profileTitle').textContent = document.getElementById('jobTitle').value||'—';
-    document.getElementById('profileLocation').textContent = '📍 ' + (document.getElementById('location').value||'—');
-  } catch (err) { toast(err.message,'error'); }
+    document.getElementById('profileTitle').textContent      = document.getElementById('jobTitle').value || '—';
+    document.getElementById('profileLocation').textContent   = '📍 ' + (document.getElementById('location').value || '—');
+    document.getElementById('profileExperience').textContent = '💼 ' + (document.getElementById('yearsExp').value || 0) + ' anos de experiência';
+  } catch(err) { toast(err.message, 'error'); }
   finally { setLoading(btn, false); }
 }
 
-function handleFileUpload(input) {
+async function handleFileUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 5*1024*1024) { toast('Arquivo muito grande. Máximo 5MB.','error'); return; }
-  document.getElementById('uploadIcon').textContent = '✅';
-  document.getElementById('uploadTitle').textContent = file.name;
-  document.getElementById('uploadSub').textContent = (file.size/1024/1024).toFixed(2)+'MB';
-  toast('Currículo carregado! Salve o perfil para enviar.');
-  calcCompletion();
+  if (file.size > 5 * 1024 * 1024) { toast('Arquivo muito grande. Máximo 5MB.', 'error'); return; }
+
+  document.getElementById('uploadIcon').textContent  = '⏳';
+  document.getElementById('uploadTitle').textContent = 'Enviando para IA...';
+  document.getElementById('uploadSub').textContent   = 'Extraindo informações do currículo';
+
+  const fd = new FormData();
+  fd.append('resume', file);
+
+  try {
+    const resp = await fetch(API + '/candidates/resume/upload', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
+      body: fd
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Erro ao enviar');
+
+    document.getElementById('uploadIcon').textContent  = '✅';
+    document.getElementById('uploadTitle').textContent = file.name;
+    document.getElementById('uploadSub').textContent   = 'IA extraiu seus dados automaticamente!';
+
+    const ext  = data.extracted || {};
+    const prof = data.profile   || {};
+
+    if (ext.job_title)          document.getElementById('jobTitle').value  = ext.job_title;
+    if (ext.years_experience)   document.getElementById('yearsExp').value  = ext.years_experience;
+    if (ext.bio)                document.getElementById('bio').value       = ext.bio;
+    if (ext.linkedin_url)       document.getElementById('linkedin').value  = ext.linkedin_url;
+    if (ext.skills?.length)     document.getElementById('skills').value    = ext.skills.join(', ');
+    if (prof.seniority)         document.getElementById('seniority').value = prof.seniority;
+    if (prof.cidade)            document.getElementById('location').value  = prof.cidade + (prof.estado ? ', ' + prof.estado : '');
+
+    updateSkillBars();
+    calcCompletion();
+    toast('✅ IA preencheu seu perfil! Revise os dados e clique em Salvar.');
+
+  } catch(e) {
+    document.getElementById('uploadIcon').textContent  = '❌';
+    document.getElementById('uploadTitle').textContent = 'Erro ao enviar';
+    document.getElementById('uploadSub').textContent   = e.message;
+    toast(e.message, 'error');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', loadProfile);
