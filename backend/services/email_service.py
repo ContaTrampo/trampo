@@ -11,13 +11,63 @@ def _saudacao() -> str:
 
 
 def _send(to: str, subject: str, html: str, text: str = "") -> bool:
-    api_key    = os.environ.get("BREVO_API_KEY", "")
-    from_email = os.environ.get("MAIL_USERNAME", "bemvindo.trampo@gmail.com")
-    from_name  = "TRAMPO"
+    # Tenta Mailtrap primeiro, depois Brevo como fallback
+    mailtrap_token = os.environ.get("MAILTRAP_TOKEN", "")
+    brevo_key      = os.environ.get("BREVO_API_KEY", "")
+    from_email     = os.environ.get("MAIL_USERNAME", "bemvindo.trampo@gmail.com")
 
-    if not api_key:
-        print(f"⚠️ BREVO_API_KEY não configurada")
-        return False
+    # --- Mailtrap ---
+    if mailtrap_token:
+        try:
+            resp = requests.post(
+                "https://send.api.mailtrap.io/api/send",
+                headers={
+                    "Authorization": f"Bearer {mailtrap_token}",
+                    "Content-Type":  "application/json",
+                },
+                json={
+                    "from":     {"email": from_email, "name": "TRAMPO"},
+                    "to":       [{"email": to}],
+                    "subject":  subject,
+                    "html":     html,
+                },
+                timeout=15,
+            )
+            if resp.status_code in (200, 201):
+                print(f"✅ Email enviado via Mailtrap → {to}")
+                return True
+            else:
+                print(f"⚠️ Mailtrap {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            print(f"⚠️ Mailtrap falhou: {e}")
+
+    # --- Brevo fallback ---
+    if brevo_key:
+        try:
+            resp = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key":      brevo_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "sender":      {"name": "TRAMPO", "email": from_email},
+                    "to":          [{"email": to}],
+                    "subject":     subject,
+                    "htmlContent": html,
+                },
+                timeout=15,
+            )
+            if resp.status_code in (200, 201):
+                print(f"✅ Email enviado via Brevo → {to}")
+                return True
+            else:
+                print(f"❌ Brevo {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            print(f"❌ Brevo falhou: {e}")
+
+    print(f"❌ Nenhum serviço de email configurado para {to}")
+    return False
     try:
         payload = {
             "sender":      {"name": from_name, "email": from_email},
