@@ -197,4 +197,3 @@ def send_whatsapp(phone: str, message: str) -> bool:
     print(f"⚠️ WhatsApp não configurado para {phone}")
     return False
 ```
-https://trampo-api-9nux.onrender.com/api/auth/test-email
