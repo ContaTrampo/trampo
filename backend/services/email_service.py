@@ -1,5 +1,5 @@
-"""TRAMPO v8 — Email via Brevo HTTP API (funciona no Render free)"""
-import os, json, requests
+"""TRAMPO v8 — Email via Resend API (gratuito, funciona no Render)"""
+import os, requests
 from datetime import datetime, timezone, timedelta
 
 
@@ -11,89 +11,31 @@ def _saudacao() -> str:
 
 
 def _send(to: str, subject: str, html: str, text: str = "") -> bool:
-    # Tenta Mailtrap primeiro, depois Brevo como fallback
-    mailtrap_token = os.environ.get("MAILTRAP_TOKEN", "")
-    brevo_key      = os.environ.get("BREVO_API_KEY", "")
-    from_email     = os.environ.get("MAIL_USERNAME", "bemvindo.trampo@gmail.com")
-
-    # --- Mailtrap ---
-    if mailtrap_token:
-        try:
-            resp = requests.post(
-                "https://send.api.mailtrap.io/api/send",
-                headers={
-                    "Authorization": f"Bearer {mailtrap_token}",
-                    "Content-Type":  "application/json",
-                },
-                json={
-                    "from":     {"email": from_email, "name": "TRAMPO"},
-                    "to":       [{"email": to}],
-                    "subject":  subject,
-                    "html":     html,
-                },
-                timeout=15,
-            )
-            if resp.status_code in (200, 201):
-                print(f"✅ Email enviado via Mailtrap → {to}")
-                return True
-            else:
-                print(f"⚠️ Mailtrap {resp.status_code}: {resp.text[:200]}")
-        except Exception as e:
-            print(f"⚠️ Mailtrap falhou: {e}")
-
-    # --- Brevo fallback ---
-    if brevo_key:
-        try:
-            resp = requests.post(
-                "https://api.brevo.com/v3/smtp/email",
-                headers={
-                    "api-key":      brevo_key,
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "sender":      {"name": "TRAMPO", "email": from_email},
-                    "to":          [{"email": to}],
-                    "subject":     subject,
-                    "htmlContent": html,
-                },
-                timeout=15,
-            )
-            if resp.status_code in (200, 201):
-                print(f"✅ Email enviado via Brevo → {to}")
-                return True
-            else:
-                print(f"❌ Brevo {resp.status_code}: {resp.text[:200]}")
-        except Exception as e:
-            print(f"❌ Brevo falhou: {e}")
-
-    print(f"❌ Nenhum serviço de email configurado para {to}")
-    return False
+    api_key = os.environ.get("RESEND_API_KEY", "")
+    if not api_key:
+        print(f"⚠️ RESEND_API_KEY não configurada")
+        return False
     try:
-        payload = {
-            "sender":      {"name": from_name, "email": from_email},
-            "to":          [{"email": to}],
-            "subject":     subject,
-            "htmlContent": html,
-        }
-        if text:
-            payload["textContent"] = text
-
         resp = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
+            "https://api.resend.com/emails",
             headers={
-                "api-key":      api_key,
-                "Content-Type": "application/json",
-                "Accept":       "application/json",
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type":  "application/json",
             },
-            json=payload,
+            json={
+                "from":    "TRAMPO <onboarding@resend.dev>",
+                "to":      [to],
+                "subject": subject,
+                "html":    html,
+            },
             timeout=15,
         )
-
         if resp.status_code in (200, 201):
-            print(f"✅ Email enviado via Brevo API → {to}")
+            data = resp.json()
+            print(f"✅ Email enviado via Resend → {to} | id: {data.get('id')}")
             return True
         else:
-            print(f"❌ Brevo API erro {resp.status_code}: {resp.text}")
+            print(f"❌ Resend erro {resp.status_code}: {resp.text[:300]}")
             return False
     except Exception as e:
         print(f"❌ Erro email {to}: {e}")
@@ -125,7 +67,7 @@ def _btn(url: str, label: str, color: str = "#10b981") -> str:
 
 def send_verification_email(user, token: str) -> bool:
     base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
-    url  = f"{base}/pages/verify-email.html?token={token}"
+    url  = f"{base}/pages/forgot-password.html?token={token}"
     saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Bem-vindo ao TRAMPO, {user.name.split()[0]}! 🎉</h2>
@@ -145,12 +87,11 @@ def send_password_reset_email(user, token: str) -> bool:
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Redefinição de Senha 🔐</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
-        {saud}, <strong>{user.name.split()[0]}</strong>! Recebemos uma solicitação para redefinir sua senha.
+        {saud}, <strong>{user.name.split()[0]}</strong>! Clique no botão abaixo para redefinir sua senha.
       </p>
       {_btn(url, '🔑 Redefinir minha Senha', '#6366f1')}
       <p style="color:#94a3b8;font-size:13px;text-align:center">
-        Este link expira em <strong>2 horas</strong>.<br>
-        Se não foi você, ignore este email.
+        Expira em <strong>2 horas</strong>. Se não foi você, ignore.
       </p>
     """, "Redefinição de senha — TRAMPO")
     return _send(user.email, "🔑 Redefinição de senha no TRAMPO", html)
@@ -160,14 +101,14 @@ def send_welcome_email(user) -> bool:
     base = os.environ.get("BASE_URL", "https://trampo-gamma.vercel.app")
     saud = _saudacao()
     html = _wrap(f"""
-      <h2 style="color:#0f172a;margin:0 0 8px">Conta ativada! Vamos começar 🚀</h2>
+      <h2 style="color:#0f172a;margin:0 0 8px">Conta criada! Vamos começar 🚀</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px">
-        {saud}, <strong>{user.name.split()[0]}</strong>! Sua conta foi ativada.
-        Complete seu perfil para receber vagas compatíveis.
+        {saud}, <strong>{user.name.split()[0]}</strong>! Sua conta TRAMPO está ativa.
+        Complete seu perfil para receber as melhores vagas.
       </p>
       {_btn(f"{base}/pages/profile.html", '👤 Completar meu Perfil')}
     """, "Bem-vindo ao TRAMPO!")
-    return _send(user.email, "🎉 Bem-vindo ao TRAMPO! Sua conta está ativa", html)
+    return _send(user.email, "🎉 Bem-vindo ao TRAMPO!", html)
 
 
 def send_application_email(user, job, application) -> bool:
@@ -175,31 +116,30 @@ def send_application_email(user, job, application) -> bool:
     saud = _saudacao()
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Currículo enviado! ✅</h2>
-      <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px">
-        {saud}, <strong>{user.name.split()[0]}</strong>! Seu currículo chegou em <strong>{job.company}</strong>!
+      <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
+        {saud}, <strong>{user.name.split()[0]}</strong>! Seu currículo chegou em <strong>{job.company}</strong>.
       </p>
-      <div style="background:#f8fafc;border-radius:12px;padding:24px;margin-bottom:24px;border-left:4px solid #10b981">
-        <div><span style="color:#64748b;font-size:13px">Vaga</span>
-             <div style="font-weight:700;color:#0f172a">{job.title}</div></div>
-        <div style="margin-top:10px"><span style="color:#64748b;font-size:13px">Empresa</span>
-             <div style="font-weight:700;color:#0f172a">{job.company}</div></div>
-        <div style="margin-top:10px"><span style="color:#64748b;font-size:13px">Compatibilidade</span>
-             <div style="font-weight:800;color:{score_color};font-size:20px">{round(application.match_score)}%</div></div>
+      <div style="background:#f8fafc;border-radius:12px;padding:20px;border-left:4px solid #10b981;margin-bottom:20px">
+        <div style="font-size:13px;color:#64748b">Vaga</div>
+        <div style="font-weight:700;color:#0f172a;margin-bottom:8px">{job.title}</div>
+        <div style="font-size:13px;color:#64748b">Empresa</div>
+        <div style="font-weight:700;color:#0f172a;margin-bottom:8px">{job.company}</div>
+        <div style="font-size:13px;color:#64748b">Compatibilidade</div>
+        <div style="font-weight:800;color:{score_color};font-size:22px">{round(application.match_score)}%</div>
       </div>
       <p style="color:#94a3b8;font-size:13px;text-align:center">Boa sorte! 🤞</p>
     """, "Currículo enviado — TRAMPO")
     _send(user.email, f"✅ Currículo enviado para {job.company}", html)
     if job.contact_email:
-        saud2 = _saudacao()
         html2 = _wrap(f"""
           <h2 style="color:#0f172a;margin:0 0 8px">Nova candidatura 🎯</h2>
           <p style="color:#475569;font-size:15px">
-            {saud2}! <strong>{user.name}</strong> se candidatou à vaga <strong>{job.title}</strong>
-            com <strong style="color:#10b981">{round(application.match_score)}%</strong> de compatibilidade.<br>
-            Email: {user.email}
+            {saud}! <strong>{user.name}</strong> se candidatou à vaga
+            <strong>{job.title}</strong> com <strong style="color:#10b981">{round(application.match_score)}%</strong>
+            de compatibilidade. Email: {user.email}
           </p>
         """, "Nova candidatura — TRAMPO")
-        _send(job.contact_email, f"🎯 Candidatura: {user.name} — {job.title}", html2)
+        _send(job.contact_email, f"🎯 {user.name} — {job.title}", html2)
     return True
 
 
@@ -211,12 +151,12 @@ def send_support_confirmation(user, ticket) -> bool:
       <p style="color:#475569;font-size:15px;line-height:1.7">
         {saud}, <strong>{user.name.split()[0]}</strong>! Responderemos em até <strong>{sla}</strong>.
       </p>
-      <div style="background:#f8fafc;border-radius:12px;padding:20px;margin-top:16px">
-        <div><span style="color:#64748b;font-size:13px">Ticket #{ticket.id}</span>
-             <div style="font-weight:700;color:#0f172a">{ticket.subject}</div></div>
+      <div style="background:#f8fafc;border-radius:12px;padding:16px;margin-top:16px">
+        <div style="font-size:12px;color:#64748b">Ticket #{ticket.id}</div>
+        <div style="font-weight:700;color:#0f172a">{ticket.subject}</div>
       </div>
     """, "Suporte — TRAMPO")
-    return _send(user.email, f"[Ticket #{ticket.id}] Mensagem recebida — TRAMPO", html)
+    return _send(user.email, f"[#{ticket.id}] Mensagem recebida — TRAMPO", html)
 
 
 def send_premium_activated(user) -> bool:
@@ -225,7 +165,7 @@ def send_premium_activated(user) -> bool:
       <h2 style="color:#0f172a;margin:0 0 8px">Você é Premium! 💎</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7">
         {saud}, <strong>{user.name.split()[0]}</strong>! Parabéns!
-        Agora você tem 30 envios/dia e candidatura em destaque. 🚀
+        Agora você tem 30 envios/dia e destaque nas candidaturas. 🚀
       </p>
     """, "Premium ativado — TRAMPO")
     return _send(user.email, "💎 Bem-vindo ao TRAMPO Premium!", html)
@@ -236,13 +176,13 @@ def send_job_payment_confirmation(user, job) -> bool:
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Vaga publicada! 🚀</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7">
-        {saud}, <strong>{user.name.split()[0]}</strong>! Sua vaga <strong>{job.title}</strong> está no ar!
+        {saud}, <strong>{user.name.split()[0]}</strong>! Sua vaga
+        <strong>{job.title}</strong> já está no ar!
       </p>
     """, "Vaga publicada — TRAMPO")
     return _send(user.email, f"🚀 Vaga publicada: {job.title}", html)
 
 
 def send_whatsapp(phone: str, message: str) -> bool:
-    """WhatsApp pausado — implementar futuramente."""
     print(f"⚠️ WhatsApp não configurado para {phone}")
     return False
