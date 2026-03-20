@@ -196,4 +196,3 @@ def send_whatsapp(phone: str, message: str) -> bool:
     """WhatsApp pausado — implementar futuramente."""
     print(f"⚠️ WhatsApp não configurado para {phone}")
     return False
-```
