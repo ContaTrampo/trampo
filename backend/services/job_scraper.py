@@ -51,6 +51,76 @@ def fetch_adzuna_jobs(query: str = "desenvolvedor", city: str = "Salvador", max_
         print(f"✅ Adzuna: {len(results)} vagas para '{query}' em {city}")
     except Exception as e:
         print(f"❌ Adzuna falhou: {e}")
+      
+      # 6. JSearch (RapidAPI) — vagas BR com skills detalhadas
+    jsearch_jobs = fetch_jsearch_jobs()
+    all_jobs.extend(jsearch_jobs)
+  def fetch_jsearch_jobs(max_results: int = 100) -> list[dict]:
+    """JSearch via RapidAPI — vagas com skills detalhadas (100 req/mês grátis)."""
+    api_key = os.environ.get("RAPIDAPI_KEY", "")
+    if not api_key:
+        print("⚠️ RAPIDAPI_KEY não configurada")
+        return []
+
+    results = []
+    queries  = ["desenvolvedor Brasil", "analista Brasil", "assistente Salvador",
+                "designer Brasil", "marketing Brasil", "engenheiro Brasil"]
+
+    for q in queries[:3]:  # 3 queries para não gastar cota
+        try:
+            resp = requests.get(
+                "https://jsearch.p.rapidapi.com/search",
+                headers={
+                    "X-RapidAPI-Key":  api_key,
+                    "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
+                },
+                params={
+                    "query":           q,
+                    "page":            "1",
+                    "num_pages":       "3",
+                    "country":         "br",
+                    "language":        "pt",
+                },
+                timeout=15,
+            )
+            resp.raise_for_status()
+            jobs = resp.json().get("data", [])
+
+            for job in jobs:
+                # Extrai skills das qualificações
+                quals = job.get("job_required_skills") or []
+                if isinstance(quals, list):
+                    skills_str = ", ".join(quals[:10])
+                else:
+                    skills_str = ""
+
+                city  = (job.get("job_city")  or "").strip()
+                state = (job.get("job_state") or "").strip()
+
+                results.append({
+                    "title":          (job.get("job_title") or "")[:200],
+                    "company":        (job.get("employer_name") or "Empresa")[:200],
+                    "description":    _strip_html(job.get("job_description") or "")[:3000],
+                    "location":       f"{city}, {state}" if city else "Brasil",
+                    "cidade":         city[:100],
+                    "estado":         state[:2].upper() if state else _guess_estado(city),
+                    "salary_min":     int(job["job_min_salary"]) if job.get("job_min_salary") else None,
+                    "salary_max":     int(job["job_max_salary"]) if job.get("job_max_salary") else None,
+                    "source_url":     job.get("job_apply_link") or job.get("job_google_link") or "",
+                    "source":         "api_jsearch",
+                    "work_mode":      "remote" if job.get("job_is_remote") else "onsite",
+                    "contract_type":  "clt",
+                    "required_skills": skills_str,
+                    "benefits":       ", ".join((job.get("job_benefits") or [])[:5]),
+                })
+
+            print(f"✅ JSearch: {len(jobs)} vagas para '{q}'")
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"❌ JSearch falhou para '{q}': {e}")
+
+    return results
     return results
 
 
