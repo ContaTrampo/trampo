@@ -29,7 +29,7 @@
   </nav>
 </header>
 
-<div class="page-header"><div class="container"><h1>👤 Meu Perfil Profissional</h1><p>Quanto mais completo seu perfil, melhor o match com as vagas.</p></div></div>
+<div class="page-header"><div class="container"><h1>👤  Profissional</h1><p>Quanto mais completo seu perfil, melhor o match com as vagas.</p></div></div>
 
 <div class="container" style="padding:40px 0 80px">
   <div style="display:grid;grid-template-columns:320px 1fr;gap:32px;align-items:start">
@@ -117,7 +117,7 @@
 
       <!-- HABILIDADES VISUAIS -->
       <div class="card" id="skillsCard">
-        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">🔧 Habilidades Detectadas</h3>
+        <h3 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:24px">🔧 Habilidades Detectadas pela IA</h3>
         <div id="skillBars"><p style="color:var(--gray-500);font-size:14px">Envie seu currículo ou preencha o campo de habilidades acima para visualizar.</p></div>
       </div>
     </div>
@@ -244,53 +244,88 @@ async function saveProfile() {
 async function handleFileUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { toast('Arquivo muito grande. Máximo 5MB.', 'error'); return; }
+  if (file.size > 5*1024*1024) { toast('Arquivo muito grande. Máximo 5MB.','error'); return; }
 
+  // Feedback visual imediato
   document.getElementById('uploadIcon').textContent  = '⏳';
-  document.getElementById('uploadTitle').textContent = 'Enviando para IA...';
-  document.getElementById('uploadSub').textContent   = 'Extraindo informações do currículo';
+  document.getElementById('uploadTitle').textContent = 'Analisando com IA...';
+  document.getElementById('uploadSub').textContent   = 'Aguarde, extraindo informações do currículo';
+
+  // Spinner no card de habilidades
+  document.getElementById('skillBars').innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div class="spinner spinner-green" style="margin:0 auto 12px;width:32px;height:32px;border-width:3px"></div>
+      <p style="font-size:13px;color:var(--gray-500)">IA lendo seu currículo...</p>
+    </div>`;
 
   const fd = new FormData();
   fd.append('resume', file);
 
   try {
     const resp = await fetch(API + '/candidates/resume/upload', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
-      body: fd
+      body:    fd,
     });
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Erro ao enviar');
+    if (!resp.ok) throw new Error(data.error || 'Erro ao enviar currículo');
 
     document.getElementById('uploadIcon').textContent  = '✅';
     document.getElementById('uploadTitle').textContent = file.name;
-    document.getElementById('uploadSub').textContent   = 'IA extraiu seus dados automaticamente!';
+    document.getElementById('uploadSub').textContent   = '✅ IA extraiu seus dados!';
 
     const ext  = data.extracted || {};
     const prof = data.profile   || {};
 
-    if (ext.job_title)          document.getElementById('jobTitle').value  = ext.job_title;
-    if (ext.years_experience)   document.getElementById('yearsExp').value  = ext.years_experience;
-    if (ext.bio)                document.getElementById('bio').value       = ext.bio;
-    if (ext.linkedin_url)       document.getElementById('linkedin').value  = ext.linkedin_url;
-    if (ext.skills?.length)     document.getElementById('skills').value    = ext.skills.join(', ');
-    if (prof.seniority)         document.getElementById('seniority').value = prof.seniority;
-    if (prof.cidade)            document.getElementById('location').value  = prof.cidade + (prof.estado ? ', ' + prof.estado : '');
+    // Preenche TODOS os campos automaticamente
+    if (ext.job_title)        { document.getElementById('jobTitle').value  = ext.job_title; }
+    if (ext.years_experience) { document.getElementById('yearsExp').value  = ext.years_experience; }
+    if (ext.bio)              { document.getElementById('bio').value       = ext.bio; }
+    if (ext.linkedin_url)     { document.getElementById('linkedin').value  = ext.linkedin_url; }
+    if (prof.phone)           { document.getElementById('phone').value     = prof.phone; }
+    if (prof.whatsapp)        { document.getElementById('whatsapp').value  = prof.whatsapp; }
+
+    // Skills — combina extraídas pela IA com as do banco
+    let skillsArr = [];
+    if (ext.skills && ext.skills.length)        skillsArr = ext.skills;
+    else if (prof.skills)                        skillsArr = typeof prof.skills === 'string'
+      ? prof.skills.split(',').map(s=>s.trim()).filter(Boolean)
+      : prof.skills;
+
+    if (skillsArr.length) {
+      document.getElementById('skills').value = skillsArr.join(', ');
+    }
+
+    // Seniority
+    if (prof.seniority) {
+      const senMap = { junior:'Junior', mid:'Pleno', senior:'Senior', lead:'Lead / Especialista', internship:'Estagiário' };
+      const sel = document.getElementById('seniority');
+      const mapped = senMap[prof.seniority] || prof.seniority;
+      for (let opt of sel.options) {
+        if (opt.value === mapped || opt.text === mapped) { sel.value = opt.value; break; }
+      }
+    }
+
+    // Localização
+    if (prof.cidade) {
+      document.getElementById('location').value = prof.cidade + (prof.estado ? ', ' + prof.estado : '');
+    }
+
+    // Atualiza sidebar
+    document.getElementById('profileTitle').textContent      = document.getElementById('jobTitle').value || '—';
+    document.getElementById('profileLocation').textContent   = '📍 ' + (document.getElementById('location').value || '—');
+    document.getElementById('profileExperience').textContent = '💼 ' + (document.getElementById('yearsExp').value || 0) + ' anos de experiência';
 
     updateSkillBars();
     calcCompletion();
+
     toast('✅ IA preencheu seu perfil! Revise os dados e clique em Salvar.');
 
   } catch(e) {
     document.getElementById('uploadIcon').textContent  = '❌';
-    document.getElementById('uploadTitle').textContent = 'Erro ao enviar';
+    document.getElementById('uploadTitle').textContent = 'Erro ao processar';
     document.getElementById('uploadSub').textContent   = e.message;
+    document.getElementById('skillBars').innerHTML = '<p style="color:var(--danger);font-size:13px">Erro ao extrair dados. Tente novamente.</p>';
     toast(e.message, 'error');
   }
 }
-
-document.addEventListener('DOMContentLoaded', loadProfile);
-</script>
-<script src="../js/radio-bar.js"></script>
-</body>
-</html>
