@@ -368,6 +368,94 @@ def save_jobs_to_db(jobs: list[dict]) -> int:
 
 # ─── Scraping completo ────────────────────────────────────────
 
+def fetch_serpapi_jobs() -> list[dict]:
+    """Google Jobs via SerpAPI (100 buscas/mês grátis)."""
+    api_key = os.environ.get("SERPAPI_KEY", "")
+    if not api_key:
+        print("⚠️ SERPAPI_KEY não configurada")
+        return []
+
+    results = []
+    queries = [
+        "vagas emprego Salvador BA",
+        "vagas desenvolvedor Brasil remoto",
+        "vagas analista São Paulo",
+        "vagas assistente administrativo Brasil",
+        "vagas marketing digital Brasil",
+    ]
+
+    for q in queries:
+        try:
+            resp = requests.get(
+                "https://serpapi.com/search",
+                params={
+                    "engine":   "google_jobs",
+                    "q":        q,
+                    "hl":       "pt",
+                    "gl":       "br",
+                    "api_key":  api_key,
+                },
+                timeout=20,
+            )
+            resp.raise_for_status()
+            jobs = resp.json().get("jobs_results", [])
+
+            for job in jobs:
+                # Extrai localização
+                location = job.get("location", "Brasil")
+                parts    = location.split(",")
+                city     = parts[0].strip() if parts else ""
+                state    = parts[1].strip() if len(parts) > 1 else ""
+
+                # Extrai salário se disponível
+                sal_min = sal_max = None
+                highlights = job.get("detected_extensions", {})
+                if highlights.get("salary"):
+                    raw = highlights["salary"]
+                    nums = [int(n.replace(".","").replace(",","")) for n in __import__("re").findall(r"[\d.,]+", raw) if len(n) > 3]
+                    if len(nums) >= 2: sal_min, sal_max = nums[0], nums[1]
+                    elif len(nums) == 1: sal_min = nums[0]
+
+                # Skills das extensões
+                skills_list = job.get("job_highlights", [])
+                skills_str  = ""
+                for h in skills_list:
+                    if h.get("title", "").lower() in ("qualifications", "qualificações", "requisitos", "skills"):
+                        skills_str = ", ".join(h.get("items", [])[:8])
+                        break
+
+                work_mode = "remote"
+                if any(w in location.lower() for w in ["remoto","remote","home office"]) or \
+                   any(w in job.get("title","").lower() for w in ["remoto","remote"]):
+                    work_mode = "remote"
+                else:
+                    work_mode = "onsite"
+
+                results.append({
+                    "title":           (job.get("title") or "")[:200],
+                    "company":         (job.get("company_name") or "Empresa")[:200],
+                    "description":     (job.get("description") or "")[:3000],
+                    "location":        location,
+                    "cidade":          city[:100],
+                    "estado":          _guess_estado(city) or state[:2].upper(),
+                    "salary_min":      sal_min,
+                    "salary_max":      sal_max,
+                    "source_url":      job.get("share_link") or "",
+                    "source":          "api_serpapi",
+                    "work_mode":       work_mode,
+                    "contract_type":   "clt",
+                    "required_skills": skills_str,
+                    "benefits":        "",
+                })
+
+            print(f"✅ SerpAPI Google Jobs: {len(jobs)} vagas para '{q}'")
+            time.sleep(2)  # respeita rate limit
+
+        except Exception as e:
+            print(f"❌ SerpAPI falhou para '{q}': {e}")
+
+    return results
+  
 def run_full_scrape() -> dict:
     all_jobs = []
 
