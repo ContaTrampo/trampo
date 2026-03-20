@@ -1,50 +1,52 @@
-"""TRAMPO v8 — Email via Brevo SMTP (gratuito, 300/dia) + WhatsApp via CallMeBot (gratuito)"""
-import os
-import smtplib
-import requests  # necessário para WhatsApp
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+"""TRAMPO v8 — Email via Brevo HTTP API (funciona no Render free)"""
+import os, json, requests
 from datetime import datetime, timezone, timedelta
 
 
 def _saudacao() -> str:
-    """Retorna 'Bom dia', 'Boa tarde' ou 'Boa noite' baseado no horário de Brasília."""
     hora = datetime.now(timezone(timedelta(hours=-3))).hour
-    if hora < 12:
-        return "Bom dia"
-    if hora < 18:
-        return "Boa tarde"
+    if hora < 12:  return "Bom dia"
+    if hora < 18:  return "Boa tarde"
     return "Boa noite"
 
 
 def _send(to: str, subject: str, html: str, text: str = "") -> bool:
-    user = os.environ.get("BREVO_SMTP_USER", "")
-    pwd  = os.environ.get("BREVO_SMTP_PASS", "")
+    api_key    = os.environ.get("BREVO_API_KEY", "")
     from_email = os.environ.get("MAIL_USERNAME", "bemvindo.trampo@gmail.com")
+    from_name  = "TRAMPO"
 
-    if not user or not pwd:
-        print(f"⚠️ BREVO_SMTP_USER ou BREVO_SMTP_PASS não configurados")
+    if not api_key:
+        print(f"⚠️ BREVO_API_KEY não configurada")
         return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = f"TRAMPO <{from_email}>"
-        msg["To"]      = to
-
+        payload = {
+            "sender":      {"name": from_name, "email": from_email},
+            "to":          [{"email": to}],
+            "subject":     subject,
+            "htmlContent": html,
+        }
         if text:
-            msg.attach(MIMEText(text, "plain", "utf-8"))
-        msg.attach(MIMEText(html, "html", "utf-8"))
+            payload["textContent"] = text
 
-        with smtplib.SMTP("smtp-relay.brevo.com", 587, timeout=20) as srv:
-            srv.ehlo()
-            srv.starttls()
-            srv.login(user, pwd)
-            srv.sendmail(from_email, to, msg.as_string())
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key":      api_key,
+                "Content-Type": "application/json",
+                "Accept":       "application/json",
+            },
+            json=payload,
+            timeout=15,
+        )
 
-        print(f"✅ Email enviado via Brevo → {to}")
-        return True
+        if resp.status_code in (200, 201):
+            print(f"✅ Email enviado via Brevo API → {to}")
+            return True
+        else:
+            print(f"❌ Brevo API erro {resp.status_code}: {resp.text}")
+            return False
     except Exception as e:
-        print(f"❌ Erro email Brevo {to}: {e}")
+        print(f"❌ Erro email {to}: {e}")
         return False
 
 
@@ -59,7 +61,7 @@ def _wrap(body_html: str, title: str = "TRAMPO") -> str:
   </div>
   <div style="padding:40px">{body_html}</div>
   <div style="background:#f8fafc;padding:24px 40px;text-align:center;border-top:1px solid #e2e8f0">
-    <p style="color:#94a3b8;font-size:12px;margin:0">© 2025 TRAMPO · <a href="mailto:bemvindo.trampo@gmail.com" style="color:#10b981">bemvindo.trampo@gmail.com</a></p>
+    <p style="color:#94a3b8;font-size:12px;margin:0">© 2026 TRAMPO · <a href="mailto:bemvindo.trampo@gmail.com" style="color:#10b981">bemvindo.trampo@gmail.com</a></p>
   </div>
 </div>
 </body></html>"""
@@ -78,7 +80,7 @@ def send_verification_email(user, token: str) -> bool:
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Bem-vindo ao TRAMPO, {user.name.split()[0]}! 🎉</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
-        {saud}, <strong>{user.name.split()[0]}</strong>! Confirme seu email para ativar sua conta e começar a encontrar vagas incríveis.
+        {saud}, <strong>{user.name.split()[0]}</strong>! Confirme seu email para ativar sua conta.
       </p>
       {_btn(url, '✉️ Confirmar meu Email')}
       <p style="color:#94a3b8;font-size:13px;text-align:center">Este link expira em <strong>24 horas</strong>.</p>
@@ -93,7 +95,7 @@ def send_password_reset_email(user, token: str) -> bool:
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Redefinição de Senha 🔐</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 20px">
-        {saud}, <strong>{user.name.split()[0]}</strong>! Recebemos uma solicitação para redefinir a senha de <strong>{user.email}</strong>.
+        {saud}, <strong>{user.name.split()[0]}</strong>! Recebemos uma solicitação para redefinir sua senha.
       </p>
       {_btn(url, '🔑 Redefinir minha Senha', '#6366f1')}
       <p style="color:#94a3b8;font-size:13px;text-align:center">
@@ -110,7 +112,7 @@ def send_welcome_email(user) -> bool:
     html = _wrap(f"""
       <h2 style="color:#0f172a;margin:0 0 8px">Conta ativada! Vamos começar 🚀</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 24px">
-        {saud}, <strong>{user.name.split()[0]}</strong>! Sua conta foi ativada!
+        {saud}, <strong>{user.name.split()[0]}</strong>! Sua conta foi ativada.
         Complete seu perfil para receber vagas compatíveis.
       </p>
       {_btn(f"{base}/pages/profile.html", '👤 Completar meu Perfil')}
@@ -138,11 +140,12 @@ def send_application_email(user, job, application) -> bool:
     """, "Currículo enviado — TRAMPO")
     _send(user.email, f"✅ Currículo enviado para {job.company}", html)
     if job.contact_email:
+        saud2 = _saudacao()
         html2 = _wrap(f"""
           <h2 style="color:#0f172a;margin:0 0 8px">Nova candidatura 🎯</h2>
           <p style="color:#475569;font-size:15px">
-            {saud}, <strong>{job.company}</strong>! <strong>{user.name}</strong> se candidatou à vaga <strong>{job.title}</strong>
-            com <strong style="color:#10b981">{round(application.match_score)}%</strong> de compatibilidade.
+            {saud2}! <strong>{user.name}</strong> se candidatou à vaga <strong>{job.title}</strong>
+            com <strong style="color:#10b981">{round(application.match_score)}%</strong> de compatibilidade.<br>
             Email: {user.email}
           </p>
         """, "Nova candidatura — TRAMPO")
@@ -172,12 +175,9 @@ def send_premium_activated(user) -> bool:
       <h2 style="color:#0f172a;margin:0 0 8px">Você é Premium! 💎</h2>
       <p style="color:#475569;font-size:15px;line-height:1.7">
         {saud}, <strong>{user.name.split()[0]}</strong>! Parabéns!
-        Agora você tem 30 envios/dia e candidatura em destaque.
+        Agora você tem 30 envios/dia e candidatura em destaque. 🚀
       </p>
     """, "Premium ativado — TRAMPO")
-    # Opcional: enviar também WhatsApp
-    if user.phone:
-        send_whatsapp(user.phone, f"{saud} {user.name.split()[0]}! Você agora é Premium no TRAMPO. 30 envios/dia, destaques e muito mais. 🚀")
     return _send(user.email, "💎 Bem-vindo ao TRAMPO Premium!", html)
 
 
@@ -192,38 +192,9 @@ def send_job_payment_confirmation(user, job) -> bool:
     return _send(user.email, f"🚀 Vaga publicada: {job.title}", html)
 
 
-# ───────────────────────────────────────────────────────────────
-# WhatsApp gratuito via CallMeBot (requer cadastro e chave pessoal)
-# Alternativas gratuitas caso o CallMeBot não funcione:
-#   - Telegram Bot (gratuito, mas usuário precisa ter Telegram)
-#   - Twilio (tem trial gratuito, mas depois cobra)
-#   - Z-API (não gratuito)
-#   - Evolution API (self-hosted, gratuito)
-# Por simplicidade, mantemos CallMeBot – o usuário deve obter sua chave em callmebot.com
-# ───────────────────────────────────────────────────────────────
-
 def send_whatsapp(phone: str, message: str) -> bool:
-    """Envia mensagem WhatsApp via CallMeBot (gratuito para teste)."""
-    try:
-        import urllib.parse
-        api_key = os.environ.get("CALLMEBOT_API_KEY", "")
-        if not api_key:
-            print("⚠️ CALLMEBOT_API_KEY não configurada")
-            return False
-
-        # Remove caracteres não numéricos e adiciona código do Brasil se necessário
-        phone_clean = phone.replace("+", "").replace(" ", "").replace("-", "")
-        if not phone_clean.startswith("55"):
-            phone_clean = "55" + phone_clean
-
-        url = f"https://api.callmebot.com/whatsapp.php?phone={phone_clean}&text={urllib.parse.quote(message)}&apikey={api_key}"
-        resp = requests.get(url, timeout=15)
-        if resp.status_code == 200:
-            print(f"✅ WhatsApp enviado para {phone_clean}")
-            return True
-        else:
-            print(f"❌ WhatsApp falhou: {resp.text}")
-            return False
-    except Exception as e:
-        print(f"⚠️ Erro WhatsApp: {e}")
-        return False
+    """WhatsApp pausado — implementar futuramente."""
+    print(f"⚠️ WhatsApp não configurado para {phone}")
+    return False
+```
+https://trampo-api-9nux.onrender.com/api/auth/test-email
