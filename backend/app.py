@@ -11,7 +11,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(ActiveConfig)
 
-    # Pool de conexão robusto para evitar SSL EOF
     db_url = os.environ.get("DATABASE_URL", "sqlite:///trampo.db")
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -22,7 +21,7 @@ def create_app():
             "pool_size":        5,
             "max_overflow":     2,
             "connect_args":     {
-                "sslmode":        "require",
+                "sslmode":         "require",
                 "connect_timeout": 10,
             },
         }
@@ -87,6 +86,26 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+
+        # Migração segura — adiciona colunas novas sem apagar dados existentes
+        try:
+            with db.engine.connect() as conn:
+                cols = [
+                    "ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS photo_url  VARCHAR(500)",
+                    "ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS location   VARCHAR(200)",
+                    "ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS education  VARCHAR(100)",
+                    "ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS phone      VARCHAR(20)",
+                ]
+                for sql in cols:
+                    try:
+                        conn.execute(db.text(sql))
+                    except Exception:
+                        pass
+                conn.commit()
+                print("✅ Migração de colunas ok")
+        except Exception as e:
+            print(f"⚠️ Migração: {e}")
+
         _seed_demo_jobs()
 
     if os.environ.get("FLASK_ENV") == "production":
