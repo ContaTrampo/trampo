@@ -1,0 +1,671 @@
+📋 DOCUMENTO COMPLETO — TRAMPO v8
+Guia Definitivo para Recriar o Site do Zero
+
+1. VISÃO GERAL DO PROJETO
+O que é o TRAMPO?
+Plataforma brasileira de matchmaking de carreiras com Inteligência Artificial. Conecta candidatos a vagas compatíveis automaticamente, sem precisar enviar currículo um por um.
+Problema que resolve:
+
+Candidatos perdem horas enviando currículos manualmente
+Recrutadores recebem centenas de currículos desalinhados
+Vagas somem da internet sem o candidato saber
+
+Solução:
+
+IA lê o currículo e preenche o perfil automaticamente
+Sistema calcula % de compatibilidade candidato-vaga
+Envia currículo automaticamente para vagas compatíveis
+Recrutador recebe ranking dos melhores candidatos
+
+
+2. LINKS E ACESSOS IMPORTANTES
+SITE LIVE (frontend):  https://trampo-gamma.vercel.app
+API LIVE (backend):    https://trampo-api-9nux.onrender.com
+GITHUB:                https://github.com/ContaTrampo/trampo
+PAINEL ADMIN:          https://trampo-gamma.vercel.app/pages/admin.html
+CHAVE ADMIN:           trampo-scrape-2025
+
+EMAIL DO TRAMPO:       bemvindo.trampo@gmail.com
+SENHA DO GMAIL:        Caioalexandre888
+SENHA APP GMAIL:       vawy mvyb kkze apah
+
+HEALTH CHECK:          https://trampo-api-9nux.onrender.com/api/health
+TESTAR EMAIL:          https://trampo-api-9nux.onrender.com/api/auth/test-email
+SCRAPING MANUAL:       https://trampo-api-9nux.onrender.com/api/admin/scrape-jobs?key=trampo-scrape-2025
+
+3. TODAS AS CHAVES E VARIÁVEIS DE AMBIENTE
+Cole isso no Render → Environment (backend) e no .env local:
+env# ── BANCO DE DADOS ─────────────────────────────────────
+DATABASE_URL=postgresql://[url_do_render_postgres]
+
+# ── SEGURANÇA ──────────────────────────────────────────
+JWT_SECRET_KEY=trampo-super-secret-key-2026-producao-segura
+SECRET_KEY=trampo-flask-secret-2026-xk9p2m
+FLASK_ENV=production
+PYTHON_VERSION=3.12.9
+
+# ── EMAIL (Resend) ─────────────────────────────────────
+RESEND_API_KEY=re_Huppy7d3_Gn5zVKx7dQh8hYPezRVeErDR
+MAIL_USERNAME=bemvindo.trampo@gmail.com
+MAIL_PASSWORD=vawy mvyb kkze apah
+
+# ── INTELIGÊNCIA ARTIFICIAL ────────────────────────────
+GROQ_API_KEY=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
+
+# ── SCRAPERS DE VAGAS ──────────────────────────────────
+ADZUNA_APP_ID=f0735131
+ADZUNA_APP_KEY=71656ff52493901f98713a9f5d401989
+RAPIDAPI_KEY=[pegar em rapidapi.com → JSearch → subscribe free]
+SERPAPI_KEY=[pegar em serpapi.com → dashboard]
+
+# ── EMAIL BACKUP ───────────────────────────────────────
+BREVO_API_KEY=[pegar em app.brevo.com → SMTP & API → API Keys]
+MAILTRAP_API_TOKEN=[pegar em mailtrap.io → API Tokens]
+
+# ── PAGAMENTOS ─────────────────────────────────────────
+STRIPE_SECRET_KEY=[pegar em dashboard.stripe.com]
+STRIPE_WEBHOOK_SECRET=[pegar em stripe → webhooks]
+
+# ── SISTEMA ────────────────────────────────────────────
+BASE_URL=https://trampo-gamma.vercel.app
+UPLOAD_FOLDER=uploads
+
+# ── PUBLICIDADE ────────────────────────────────────────
+GOOGLE_ADSENSE_ID=ca-pub-3895163919416652
+```
+
+---
+
+# 4. TECNOLOGIAS USADAS (100% GRATUITAS)
+
+| Camada | Tecnologia | Para que serve |
+|---|---|---|
+| Backend | Python 3.12 + Flask | Servidor da API |
+| Banco | PostgreSQL (Render free) | Guardar todos os dados |
+| IA | Groq LLaMA 3 (grátis) | Ler currículo e preencher perfil |
+| Email | Resend API (3000/mês grátis) | Enviar todos os emails |
+| Vagas | Adzuna + Remotive + Arbeitnow | Buscar vagas reais |
+| Vagas+ | JSearch (RapidAPI) + SerpAPI | Mais vagas com skills |
+| Pagamento | Stripe Checkout | Cobrar R$29/mês premium |
+| Frontend | HTML5 + CSS3 + JavaScript | Interface do usuário |
+| Mapa | Leaflet.js + OSRM (grátis) | Calcular rotas |
+| Endereços | Nominatim (grátis) | Autocomplete de cidades |
+| Hosting Backend | Render free tier | Servidor online |
+| Hosting Frontend | Vercel free tier | Site online |
+| Anúncios | Google AdSense | Renda passiva |
+
+---
+
+# 5. ESTRUTURA COMPLETA DE PASTAS
+```
+trampo/
+│
+├── backend/
+│   ├── app.py                    ← Servidor principal Flask
+│   ├── config.py                 ← Configurações e variáveis
+│   ├── database.py               ← Conexão PostgreSQL
+│   ├── models.py                 ← Tabelas do banco de dados
+│   ├── requirements.txt          ← Dependências Python
+│   │
+│   ├── routes/                   ← Todas as rotas da API
+│   │   ├── auth.py               ← Login, registro, senha
+│   │   ├── candidates.py         ← Perfil, currículo, foto
+│   │   ├── recruiters.py         ← Painel do recrutador
+│   │   ├── jobs.py               ← Listar e buscar vagas
+│   │   ├── applications.py       ← Candidaturas
+│   │   ├── payments.py           ← Stripe/Premium
+│   │   ├── support.py            ← Tickets de suporte
+│   │   ├── admin.py              ← Painel administrativo
+│   │   ├── matching.py           ← Match candidato-vaga
+│   │   ├── reviews.py            ← Avaliações
+│   │   └── routes_api.py         ← Cálculo de rotas
+│   │
+│   ├── services/                 ← Serviços externos
+│   │   ├── email_service.py      ← Envio de emails (Resend)
+│   │   ├── resume_parser.py      ← Leitura de PDF com IA
+│   │   └── job_scraper.py        ← Busca automática de vagas
+│   │
+│   └── uploads/                  ← PDFs dos currículos
+│
+├── frontend/
+│   ├── index.html                ← Página inicial (HOME)
+│   │
+│   ├── css/
+│   │   └── style.css             ← Estilos de todo o site
+│   │
+│   ├── js/
+│   │   ├── main.js               ← JavaScript principal
+│   │   └── radio-bar.js          ← Rádio flutuante
+│   │
+│   └── pages/
+│       ├── vagas.html            ← Busca de vagas com filtros
+│       ├── profile.html          ← Painel profissional
+│       ├── dispatch.html         ← Disparar currículo
+│       ├── routes.html           ← Calculadora de rotas
+│       ├── premium.html          ← Plano premium
+│       ├── support.html          ← Suporte
+│       ├── recruiter.html        ← Painel do recrutador
+│       ├── admin.html            ← Painel administrativo
+│       ├── forgot-password.html  ← Recuperar senha
+│       ├── privacidade.html      ← Política de privacidade
+│       └── termos.html           ← Termos de uso
+│
+├── .env                          ← Chaves (NÃO subir pro GitHub)
+├── .gitignore
+└── README.md
+```
+
+---
+
+# 6. BANCO DE DADOS — TABELAS COMPLETAS
+
+### Tabela: `users` (Usuários)
+```
+id               → número único
+name             → nome completo
+email            → email (único)
+password_hash    → senha criptografada
+role             → "candidate" ou "recruiter" ou "admin"
+phone            → telefone
+cidade           → cidade
+estado           → sigla (BA, SP, RJ...)
+email_verified   → true/false
+password_reset_token    → token para resetar senha
+password_reset_expires  → quando o token expira
+is_premium       → true/false
+premium_expires_at → quando o premium acaba
+stripe_customer_id    → ID do cliente no Stripe
+daily_sends_used → quantos envios fez hoje
+last_reset_date  → data do último reset de cota
+created_at       → quando criou a conta
+```
+
+### Tabela: `candidate_profiles` (Perfis)
+```
+id               → número único
+user_id          → qual usuário (liga com users)
+job_title        → cargo/profissão
+years_experience → anos de experiência
+seniority        → junior/mid/senior/lead
+salary_min       → salário mínimo desejado
+salary_max       → salário máximo desejado
+availability     → immediate/2weeks/1month
+work_mode        → remote/hybrid/onsite/any
+bio              → resumo profissional
+skills           → habilidades separadas por vírgula
+linkedin_url     → link do LinkedIn
+github_url       → link do GitHub
+whatsapp         → número WhatsApp
+phone            → telefone
+resume_filename  → nome do arquivo PDF salvo
+resume_text      → texto extraído do PDF
+photo_url        → URL da foto de perfil
+location         → cidade, estado
+education        → escolaridade
+created_at       → data de criação
+```
+
+### Tabela: `jobs` (Vagas)
+```
+id                  → número único
+recruiter_id        → qual recrutador publicou
+title               → título da vaga
+company             → nome da empresa
+description         → descrição completa
+location            → localização texto
+cidade              → cidade
+estado              → sigla estado
+contract_type       → clt/pj/freelancer/internship
+salary_min          → salário mínimo
+salary_max          → salário máximo
+work_mode           → remote/hybrid/onsite
+required_skills     → skills necessárias (vírgula)
+required_experience → anos mínimos de experiência
+contact_email       → email da empresa
+source_url          → URL da vaga original
+benefits            → benefícios oferecidos
+status              → active/closed
+source              → manual/api_adzuna/api_remotive...
+is_featured         → vaga em destaque
+posted_at           → quando foi publicada
+```
+
+### Tabela: `applications` (Candidaturas)
+```
+id           → número único
+user_id      → qual candidato
+job_id       → qual vaga
+match_score  → % de compatibilidade (0-100)
+cover_letter → carta de apresentação gerada pela IA
+email_sent_to→ email da empresa que recebeu
+status       → sent/viewed/responded/rejected
+is_featured  → candidatura em destaque (premium)
+sent_at      → quando foi enviada
+```
+
+### Tabela: `support_tickets` (Suporte)
+```
+id         → número único
+user_id    → qual usuário
+subject    → assunto
+message    → mensagem completa
+status     → open/resolved
+priority   → normal/high (premium = high)
+created_at → quando foi criado
+```
+
+---
+
+# 7. API — TODOS OS ENDPOINTS
+
+### Autenticação (`/api/auth/`)
+```
+POST /api/auth/register          → Criar conta
+POST /api/auth/login             → Fazer login
+GET  /api/auth/me                → Dados do usuário logado
+POST /api/auth/forgot-password   → Pedir reset de senha
+POST /api/auth/reset-password    → Salvar nova senha
+POST /api/auth/change-password   → Trocar senha (logado)
+GET  /api/auth/test-email        → Testar se email funciona
+```
+
+### Candidatos (`/api/candidates/`)
+```
+GET  /api/candidates/profile        → Ver meu perfil
+PUT  /api/candidates/profile        → Salvar meu perfil
+POST /api/candidates/resume/upload  → Enviar PDF do currículo
+GET  /api/candidates/resume/download→ Baixar meu currículo
+POST /api/candidates/photo          → Enviar foto de perfil
+GET  /api/candidates/applications   → Minhas candidaturas
+GET  /api/candidates/search         → Buscar candidatos (recrutador)
+```
+
+### Vagas (`/api/jobs/`)
+```
+GET  /api/jobs/              → Listar vagas (com filtros)
+GET  /api/jobs/{id}          → Ver vaga específica
+POST /api/jobs/              → Publicar vaga (recrutador)
+PUT  /api/jobs/{id}          → Editar vaga
+DELETE /api/jobs/{id}        → Deletar vaga
+```
+
+### Candidaturas (`/api/applications/`)
+```
+POST /api/applications/      → Se candidatar a uma vaga
+GET  /api/applications/      → Listar candidaturas da vaga (recrutador)
+PUT  /api/applications/{id}  → Atualizar status (aceitar/rejeitar)
+```
+
+### Pagamentos (`/api/payments/`)
+```
+POST /api/payments/create-checkout → Criar sessão Stripe
+POST /api/payments/webhook         → Receber confirmação Stripe
+GET  /api/payments/status          → Ver se sou premium
+```
+
+### Admin (`/api/admin/`)
+```
+GET  /api/admin/stats              → Estatísticas gerais
+POST /api/admin/scrape-jobs        → Rodar scraping manualmente
+GET  /api/admin/jobs               → Listar todas as vagas
+DELETE /api/admin/jobs/{id}        → Deletar vaga
+```
+
+### Matching (`/api/matching/`)
+```
+GET  /api/matching/my-matches      → Vagas compatíveis com meu perfil
+GET  /api/matching/candidates/{job_id} → Candidatos para uma vaga
+Exemplo de Requisição (Login):
+javascript// Frontend chama assim:
+const resp = await fetch('https://trampo-api-9nux.onrender.com/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'usuario@email.com',
+    password: 'minhasenha123'
+  })
+});
+const data = await resp.json();
+// data.token → salva no localStorage
+// data.user  → dados do usuário
+Exemplo de Requisição Autenticada:
+javascript// Toda requisição que precisa de login usa o token:
+const resp = await fetch('https://trampo-api-9nux.onrender.com/api/candidates/profile', {
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('trampo_token')}`
+  }
+});
+
+8. PÁGINAS DO FRONTEND — O QUE CADA UMA FAZ
+index.html — HOME
+
+Hero com frase de impacto e botão "Começar Grátis"
+6 cards flutuantes: Análise IA, Envio Automático, Rotas, Confirmação, Premium, Suporte
+Estatísticas (12.543 currículos enviados, etc.)
+Grade com 6 vagas reais do banco de dados
+3 depoimentos de usuários
+Rádio flutuante no rodapé
+Google AdSense no <head>
+
+pages/vagas.html — BUSCA DE VAGAS
+
+Filtros: cidade, cargo, modalidade, contrato, nível, data, salário, setor, PCD
+Lista de vagas com paginação
+Modal com detalhes completos da vaga
+Botão candidatar direto no modal
+
+pages/profile.html — PAINEL PROFISSIONAL
+
+Sidebar com foto, nome, cargo, localização
+Upload de currículo PDF com 2 botões:
+
+"💾 Salvar Currículo" — só armazena
+"🤖 Analisar com IA e Preencher" — IA preenche tudo
+
+
+Formulário: cargo, experiência, escolaridade, localização, disponibilidade, modalidade, habilidades, resumo
+Informações de contato: LinkedIn, GitHub, WhatsApp, telefone
+Barra de completude do perfil (0-100%)
+Habilidades detectadas pela IA com barras de progresso
+
+pages/dispatch.html — DISPARAR CURRÍCULO
+
+Cota do dia (5/5 free ou 30/30 premium)
+Botão grande "🎯 ANALISAR & DISPARAR"
+Lista de vagas com % de match
+Preview do email personalizado antes de enviar
+Histórico de candidaturas enviadas
+
+pages/routes.html — CALCULADORA DE ROTAS
+
+Mapa interativo (Leaflet.js)
+Campo origem com autocomplete (Nominatim)
+Campo destino com autocomplete
+Resultados em abas: Transporte público, Uber/99, Bicicleta, A pé
+Estimativa de tempo e custo por modal
+
+pages/recruiter.html — PAINEL RECRUTADOR
+
+Dashboard com estatísticas de vagas
+Formulário para publicar nova vaga
+Lista de candidatos ranqueados por IA (melhor ao pior)
+Ver perfil completo do candidato
+Baixar currículo, enviar email, aprovar/rejeitar
+
+pages/premium.html — PLANO PREMIUM
+
+Tabela comparativa Free vs Premium
+5 cards de benefícios animados
+Botão de pagamento (Stripe R$29/mês)
+Botão plano anual (R$280/ano — 20% off)
+
+pages/support.html — SUPORTE
+
+FAQ com 20+ perguntas e respostas
+Formulário de contato (cria ticket no banco)
+Chat ao vivo (Premium)
+
+pages/forgot-password.html — RECUPERAR SENHA
+
+Step 1: digita email
+Step 2: email enviado (mensagem)
+Step 3: digita nova senha (chega via link no email)
+Step 4: senha redefinida com sucesso
+Step 5: token expirado (pede novo link)
+
+pages/admin.html — PAINEL ADMIN
+
+Acesso por chave: trampo-scrape-2025
+Estatísticas: total vagas, usuários, candidaturas
+Botão rodar scraping manualmente
+Listar e deletar vagas
+Publicar vaga manualmente
+
+
+9. DESIGN — CORES E ESTILO
+css/* Paleta de cores principal */
+--green:       #10b981;  /* Verde principal */
+--green-dark:  #059669;  /* Verde escuro */
+--green-light: #d1fae5;  /* Verde claro (fundo) */
+--navy:        #0f172a;  /* Azul escuro (títulos) */
+--gray-700:    #374151;  /* Cinza texto */
+--gray-500:    #6b7280;  /* Cinza médio */
+--gray-100:    #f3f4f6;  /* Cinza claro (bordas) */
+--gray-50:     #f9fafb;  /* Cinza quase branco */
+--danger:      #ef4444;  /* Vermelho erros */
+--white:       #ffffff;
+
+/* Fonte */
+font-family: 'Segoe UI', Arial, sans-serif;
+
+/* Gradiente do header dos emails */
+background: linear-gradient(135deg, #10b981, #059669);
+
+/* Sombra padrão dos cards */
+box-shadow: 0 4px 24px rgba(0,0,0,.08);
+
+/* Border radius padrão */
+border-radius: 16px;  /* cards grandes */
+border-radius: 10px;  /* inputs e botões */
+border-radius: 8px;   /* botões menores */
+```
+
+---
+
+# 10. SISTEMA DE EMAIL — COMO FUNCIONA
+
+**Serviço usado:** Resend (resend.com) — 3.000 emails/mês grátis
+
+**Chave:** `re_Huppy7d3_Gn5zVKx7dQh8hYPezRVeErDR`
+
+**Remetente:** `TRAMPO <onboarding@resend.dev>`
+
+**Saudação automática por horário de Brasília (UTC-3):**
+- Antes das 12h → "Bom dia"
+- 12h às 18h → "Boa tarde"
+- Depois das 18h → "Boa noite"
+
+**Emails disparados automaticamente:**
+
+| Evento | Quem recebe | Assunto |
+|---|---|---|
+| Criar conta | Candidato | 🎉 Bem-vindo ao TRAMPO! |
+| Esqueceu senha | Candidato | 🔑 Redefinição de senha |
+| Candidatura enviada | Candidato | ✅ Currículo enviado para [empresa] |
+| Candidatura recebida | Empresa | 🎯 [Nome] — [Vaga] |
+| Premium ativado | Candidato | 💎 Bem-vindo ao TRAMPO Premium! |
+| Ticket suporte | Candidato | [Ticket #ID] Mensagem recebida |
+
+---
+
+# 11. INTELIGÊNCIA ARTIFICIAL — COMO FUNCIONA
+
+**Serviço:** Groq (console.groq.com) — gratuito
+**Modelo:** `llama3-8b-8192`
+**Chave:** `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`
+
+**O que a IA faz:**
+1. Recebe o texto extraído do PDF do currículo
+2. Retorna um JSON com: cargo, anos de experiência, nível, resumo profissional, skills, cidade, estado, telefone, LinkedIn, GitHub, email
+3. O sistema preenche automaticamente todos os campos do perfil
+
+**Se a IA falhar** (sem chave, erro de rede, etc.) o sistema usa extração por regex que detecta: email, telefone, LinkedIn, GitHub, anos de experiência, e skills técnicas comuns
+
+**Score de match candidato-vaga:**
+```
+Skills em comum:     até 40 pontos
+Experiência alinhada: até 30 pontos
+Mesma localidade:    até 20 pontos
+Salário compatível:  até 10 pontos
+─────────────────────────────────
+Total máximo:        100 pontos
+Mínimo para mostrar: 60 pontos
+
+12. SCRAPING DE VAGAS — 6 FONTES
+O sistema busca vagas automaticamente todo dia às 06:00h da manhã.
+FonteComo funcionaVagas/rodadaAdzunaAPI gratuita (chave já configurada)100+RemotiveAPI pública gratuita50+ArbeitnowAPI pública gratuita40+GupyScraping de 20 empresas BR60+JSearch (RapidAPI)API — 100 req/mês grátis50+SerpAPI (Google Jobs)API — 100 buscas/mês grátis50+
+Total estimado por rodada: 300-400 vagas reais
+
+13. SISTEMA DE PAGAMENTO — STRIPE
+Como funciona:
+
+Usuário clica "Assinar Premium"
+Sistema cria sessão no Stripe
+Usuário paga R$29 com cartão/Pix
+Stripe confirma via webhook
+Sistema marca usuário como premium
+Email de confirmação enviado
+
+Planos:
+
+Mensal: R$ 29/mês
+Anual: R$ 280/ano (economiza R$ 68)
+
+O que muda sendo Premium:
+
+De 5 para 30 envios de currículo por dia
+Badge dourado 💎 no perfil
+Candidatura aparece no topo para recrutadores
+Suporte prioritário (resposta em 2h vs 24h)
+
+
+14. RÁDIO FLUTUANTE
+Aparece em todas as páginas, canto inferior esquerdo. Toca estações de rádio online brasileiras como Jovem Pan FM, Bossa Jazz Brasil, etc.
+O arquivo frontend/js/radio-bar.js controla:
+
+Player com play/pause
+Volume
+Nome da estação atual
+Lista de estações para trocar
+
+
+15. GOOGLE ADSENSE
+Publisher ID: ca-pub-3895163919416652
+Adicionar no <head> de TODAS as páginas:
+html<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3895163919416652" crossorigin="anonymous"></script>
+```
+
+**Status atual:** "Preparando" — aprovação leva 2-4 semanas após ter tráfego real.
+
+---
+
+# 16. FLUXO PRINCIPAL DO USUÁRIO
+```
+CANDIDATO:
+1. Acessa trampo-gamma.vercel.app
+2. Vê vagas na home
+3. Clica "Criar Conta"
+4. Recebe email de boas-vindas
+5. Vai em "Meu Perfil"
+6. Faz upload do currículo PDF
+7. Clica "🤖 Analisar com IA" → campos preenchem sozinhos
+8. Clica "💾 Salvar Perfil"
+9. Vai em "Disparar CV"
+10. Vê vagas com % de match
+11. Candidata → empresa recebe email personalizado
+12. Candidato recebe email de confirmação
+13. Pode assinar Premium por R$29/mês
+
+RECRUTADOR:
+1. Cria conta como "Recrutador"
+2. Vai em "Painel Recrutador"
+3. Publica vaga com formulário
+4. Sistema automaticamente ranqueia os melhores candidatos
+5. Recrutador vê lista do melhor ao pior
+6. Clica no candidato, vê perfil completo
+7. Baixa currículo ou envia email direto
+```
+
+---
+
+# 17. REGRAS IMPORTANTES DE DESENVOLVIMENTO
+```
+✅ SEMPRE fazer:
+- pool_pre_ping=True no banco (evita erro SSL EOF)
+- try/catch em todo email (não pode travar o servidor)
+- Array.isArray() antes de .split() no frontend
+- Migração segura: ALTER TABLE ADD COLUMN IF NOT EXISTS
+- JWT_SECRET_KEY com pelo menos 32 caracteres
+- Fallback: se Groq falhar → usar regex para extrair dados
+- Saudação por horário de Brasília em todos os emails
+- Após login → ir para index.html (não para profile)
+
+❌ NUNCA fazer:
+- Usar .split() direto em required_skills (pode ser array)
+- Deixar email bloquear a resposta da API
+- Apagar dados do banco ao fazer migração
+- Subir o arquivo .env pro GitHub
+- Deixar JWT_SECRET_KEY curta (menos de 32 chars)
+- Colocar código fora de funções no email_service.py
+```
+
+---
+
+# 18. COMO FAZER O DEPLOY DO ZERO
+
+### Backend (Render):
+1. Acessa `render.com` → New Web Service
+2. Conecta o GitHub `ContaTrampo/trampo`
+3. Root Directory: `backend`
+4. Build Command: `pip install -r requirements.txt`
+5. Start Command: `gunicorn 'app:create_app()' --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
+6. Adiciona todas as variáveis de ambiente da seção 3
+7. Cria também um PostgreSQL gratuito no Render e copia a `DATABASE_URL`
+
+### Frontend (Vercel):
+1. Acessa `vercel.com` → Import Project
+2. Conecta o GitHub `ContaTrampo/trampo`
+3. Root Directory: `frontend`
+4. Framework: Other (HTML estático)
+5. Deploy
+
+### Após deploy:
+1. Testa: `https://[sua-api].onrender.com/api/health`
+2. Testa email: `https://[sua-api].onrender.com/api/auth/test-email`
+3. Configura UptimeRobot para pingar a API a cada 5 min (evita dormir)
+
+---
+
+# 19. DEPENDÊNCIAS PYTHON (requirements.txt)
+```
+flask==3.0.3
+flask-sqlalchemy==3.1.1
+flask-jwt-extended==4.6.0
+flask-cors==4.0.1
+psycopg2-binary==2.9.9
+gunicorn==22.0.0
+werkzeug==3.0.4
+requests==2.32.3
+pdfplumber==0.11.4
+groq==0.11.0
+stripe==10.5.0
+apscheduler==3.10.4
+python-dotenv==1.0.1
+beautifulsoup4==4.12.3
+```
+
+---
+
+# 20. ESTIMATIVA DE VALOR E PROJEÇÃO
+```
+VALOR ATUAL DO MVP:
+Com tudo funcionando hoje: R$ 15.000 - R$ 25.000
+
+PROJEÇÃO DE RECEITA:
+100 usuários premium  = R$ 2.900/mês
+500 usuários premium  = R$ 14.500/mês
+1000 usuários premium = R$ 29.000/mês
+
+FONTES DE RENDA (além do premium):
+- Vagas patrocinadas: R$ 50-200 por vaga em destaque
+- Google AdSense: R$ 200-800/mês com 10.000 visitas
+- Afiliados (Udemy, Alura): 8-15% comissão por venda
+- Recrutadores B2B (futuro): R$ 99/mês
+
+CUSTO MENSAL (hoje):
+- Render backend: R$ 0 (free tier)
+- Vercel frontend: R$ 0 (free tier)
+- PostgreSQL: R$ 0 (free tier)
+- Resend email: R$ 0 (3000/mês grátis)
+- Groq IA: R$ 0 (grátis)
+TOTAL: R$ 0/mês

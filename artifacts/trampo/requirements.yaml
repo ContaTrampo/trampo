@@ -1,0 +1,21 @@
+packages:
+  "framer-motion": "Animations and page transitions"
+  "@hookform/resolvers": "Zod integration for forms"
+  "react-hook-form": "Form state management"
+  "zod": "Schema validation"
+  "recharts": "Admin dashboard charts"
+  "date-fns": "Date formatting"
+  "lucide-react": "Icons"
+
+images:
+  - path: "artifacts/trampo/public/images/hero-bg.png"
+    description: "Abstract modern geometric background with deep forest green and vibrant yellow gradients, soft light leaks, premium glassmorphism tech startup feel, highly polished"
+    aspect_ratio: "16:9"
+  - path: "artifacts/trampo/public/images/app-mockup.png"
+    description: "A beautiful stylized 3D mockup of a dashboard interface floating, glassmorphism, dark green and vibrant yellow accents, clean UI, tech platform presentation"
+    aspect_ratio: "4:3"
+
+notes:
+  - Using window.fetch override in App.tsx to dynamically inject JWT Authorization header
+  - Utilizing shadcn/ui components extensively for premium aesthetics
+  - Integrating generated orval hooks from @workspace/api-client-react

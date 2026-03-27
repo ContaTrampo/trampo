@@ -1,0 +1,919 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: TRAMPO — Plataforma de matchmaking de carreiras com IA
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Autenticação e usuários
+  - name: candidates
+    description: Perfil e currículo de candidatos
+  - name: jobs
+    description: Vagas
+  - name: applications
+    description: Candidaturas
+  - name: payments
+    description: Pagamentos e premium
+  - name: support
+    description: Suporte
+  - name: admin
+    description: Painel administrativo
+  - name: recruiters
+    description: Painel do recrutador
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Criar conta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Conta criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Fazer login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login realizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Dados do usuário logado
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dados do usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Solicitar reset de senha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        "200":
+          description: Email enviado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Salvar nova senha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+              required: [token, password]
+      responses:
+        "200":
+          description: Senha alterada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /candidates/profile:
+    get:
+      operationId: getCandidateProfile
+      tags: [candidates]
+      summary: Ver meu perfil
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Perfil do candidato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateProfile"
+    put:
+      operationId: updateCandidateProfile
+      tags: [candidates]
+      summary: Salvar meu perfil
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCandidateProfileRequest"
+      responses:
+        "200":
+          description: Perfil atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateProfile"
+
+  /candidates/applications:
+    get:
+      operationId: getCandidateApplications
+      tags: [candidates]
+      summary: Minhas candidaturas
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de candidaturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: Listar vagas
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: work_mode
+          in: query
+          schema:
+            type: string
+            enum: [remote, hybrid, onsite, any]
+        - name: contract_type
+          in: query
+          schema:
+            type: string
+            enum: [clt, pj, freelancer, internship]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Lista de vagas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobListResponse"
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Publicar vaga (recrutador)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "201":
+          description: Vaga criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /jobs/{id}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Ver vaga específica
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vaga
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    put:
+      operationId: updateJob
+      tags: [jobs]
+      summary: Editar vaga
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "200":
+          description: Vaga atualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    delete:
+      operationId: deleteJob
+      tags: [jobs]
+      summary: Deletar vaga
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vaga deletada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /applications:
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Se candidatar a uma vaga
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id:
+                  type: integer
+              required: [job_id]
+      responses:
+        "201":
+          description: Candidatura criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+    get:
+      operationId: listApplications
+      tags: [applications]
+      summary: Listar candidaturas da vaga (recrutador)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: job_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de candidaturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+
+  /applications/{id}:
+    put:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Atualizar status da candidatura
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [sent, viewed, responded, rejected]
+              required: [status]
+      responses:
+        "200":
+          description: Candidatura atualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /payments/status:
+    get:
+      operationId: getPaymentStatus
+      tags: [payments]
+      summary: Ver se sou premium
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Status do plano
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentStatus"
+
+  /payments/create-checkout:
+    post:
+      operationId: createCheckout
+      tags: [payments]
+      summary: Criar sessão de pagamento
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: URL de checkout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkout_url:
+                    type: string
+                required: [checkout_url]
+
+  /support/tickets:
+    get:
+      operationId: listSupportTickets
+      tags: [support]
+      summary: Listar meus tickets
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupportTicket"
+    post:
+      operationId: createSupportTicket
+      tags: [support]
+      summary: Criar ticket de suporte
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSupportTicketRequest"
+      responses:
+        "201":
+          description: Ticket criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Estatísticas gerais
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Estatísticas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /recruiters/jobs:
+    get:
+      operationId: getRecruiterJobs
+      tags: [recruiters]
+      summary: Vagas do recrutador
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Vagas do recrutador
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [candidate, recruiter, admin]
+        phone:
+          type: string
+          nullable: true
+        cidade:
+          type: string
+          nullable: true
+        estado:
+          type: string
+          nullable: true
+        is_premium:
+          type: boolean
+        premium_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required: [id, name, email, role, is_premium, created_at]
+
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        role:
+          type: string
+          enum: [candidate, recruiter]
+        phone:
+          type: string
+        cidade:
+          type: string
+        estado:
+          type: string
+      required: [name, email, password, role]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required: [token, user]
+
+    CandidateProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        job_title:
+          type: string
+          nullable: true
+        years_experience:
+          type: integer
+          nullable: true
+        seniority:
+          type: string
+          enum: [junior, mid, senior, lead]
+          nullable: true
+        salary_min:
+          type: number
+          nullable: true
+        salary_max:
+          type: number
+          nullable: true
+        availability:
+          type: string
+          enum: [immediate, 2weeks, 1month]
+          nullable: true
+        work_mode:
+          type: string
+          enum: [remote, hybrid, onsite, any]
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        skills:
+          type: string
+          nullable: true
+        linkedin_url:
+          type: string
+          nullable: true
+        github_url:
+          type: string
+          nullable: true
+        whatsapp:
+          type: string
+          nullable: true
+        resume_filename:
+          type: string
+          nullable: true
+        resume_text:
+          type: string
+          nullable: true
+        photo_url:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        education:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required: [id, user_id, created_at]
+
+    UpdateCandidateProfileRequest:
+      type: object
+      properties:
+        job_title:
+          type: string
+        years_experience:
+          type: integer
+        seniority:
+          type: string
+          enum: [junior, mid, senior, lead]
+        salary_min:
+          type: number
+        salary_max:
+          type: number
+        availability:
+          type: string
+          enum: [immediate, 2weeks, 1month]
+        work_mode:
+          type: string
+          enum: [remote, hybrid, onsite, any]
+        bio:
+          type: string
+        skills:
+          type: string
+        linkedin_url:
+          type: string
+        github_url:
+          type: string
+        whatsapp:
+          type: string
+        location:
+          type: string
+        education:
+          type: string
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: integer
+        recruiter_id:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        company:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+          nullable: true
+        cidade:
+          type: string
+          nullable: true
+        estado:
+          type: string
+          nullable: true
+        contract_type:
+          type: string
+          enum: [clt, pj, freelancer, internship]
+          nullable: true
+        salary_min:
+          type: number
+          nullable: true
+        salary_max:
+          type: number
+          nullable: true
+        work_mode:
+          type: string
+          enum: [remote, hybrid, onsite]
+          nullable: true
+        required_skills:
+          type: string
+          nullable: true
+        required_experience:
+          type: integer
+          nullable: true
+        contact_email:
+          type: string
+          nullable: true
+        benefits:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, closed]
+        source:
+          type: string
+          nullable: true
+        is_featured:
+          type: boolean
+        posted_at:
+          type: string
+          format: date-time
+      required: [id, title, company, description, status, is_featured, posted_at]
+
+    JobListResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Job"
+        total:
+          type: integer
+        page:
+          type: integer
+        total_pages:
+          type: integer
+      required: [jobs, total, page, total_pages]
+
+    CreateJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        company:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        cidade:
+          type: string
+        estado:
+          type: string
+        contract_type:
+          type: string
+          enum: [clt, pj, freelancer, internship]
+        salary_min:
+          type: number
+        salary_max:
+          type: number
+        work_mode:
+          type: string
+          enum: [remote, hybrid, onsite]
+        required_skills:
+          type: string
+        required_experience:
+          type: integer
+        contact_email:
+          type: string
+        benefits:
+          type: string
+      required: [title, company, description]
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        job_id:
+          type: integer
+        match_score:
+          type: number
+          nullable: true
+        cover_letter:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [sent, viewed, responded, rejected]
+        is_featured:
+          type: boolean
+        sent_at:
+          type: string
+          format: date-time
+        job:
+          $ref: "#/components/schemas/Job"
+          nullable: true
+      required: [id, user_id, job_id, status, is_featured, sent_at]
+
+    PaymentStatus:
+      type: object
+      properties:
+        is_premium:
+          type: boolean
+        premium_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        daily_sends_used:
+          type: integer
+        daily_limit:
+          type: integer
+      required: [is_premium, daily_sends_used, daily_limit]
+
+    SupportTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        subject:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [open, resolved]
+        priority:
+          type: string
+          enum: [normal, high]
+        created_at:
+          type: string
+          format: date-time
+      required: [id, user_id, subject, message, status, priority, created_at]
+
+    CreateSupportTicketRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+        message:
+          type: string
+      required: [subject, message]
+
+    AdminStats:
+      type: object
+      properties:
+        total_users:
+          type: integer
+        total_candidates:
+          type: integer
+        total_recruiters:
+          type: integer
+        total_jobs:
+          type: integer
+        total_applications:
+          type: integer
+        premium_users:
+          type: integer
+      required: [total_users, total_candidates, total_recruiters, total_jobs, total_applications, premium_users]

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "TRAMPO — Plataforma de Carreiras com IA"
+version = "1.0.0"
+id = "artifacts/trampo"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19821
+
+[services.development]
+run = "pnpm --filter @workspace/trampo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/trampo", "run", "build" ]
+publicDir = "artifacts/trampo/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19821"
+BASE_PATH = "/"
