@@ -9,8 +9,9 @@
       - key: NODE_ENV
         value: production
 
-  - type: static
+  - type: web
     name: trampo-frontend
+    runtime: static
     rootDir: artifacts/trampo
     buildCommand: corepack enable && pnpm install && pnpm run build
     staticPublishPath: dist
